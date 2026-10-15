@@ -1,0 +1,180 @@
+# Orneos clients: every day, look for a new official Nextcloud release; when there is one, bump versions.env,
+# build the branded desktop apps on it (Linux, Windows, macOS; unsigned) and attach them to a draft GitHub release.
+# Android only gets a compile check here: the signing key never leaves the server, which builds the signed APK
+# (tools/client-build.sh in the orneos.eu repository) and publishes everything after a test install.
+name: Build Orneos clients
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['versions.env', 'desktop/**', 'android/**', 'scripts/**', '.github/workflows/**']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build
+  cancel-in-progress: false
+
+jobs:
+  upstream:
+    runs-on: ubuntu-latest
+    outputs:
+      desktop: ${{ steps.v.outputs.desktop }}
+      android: ${{ steps.v.outputs.android }}
+      changed: ${{ steps.bump.outputs.changed }}
+      buildnr: ${{ steps.v.outputs.buildnr }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: New official release?
+        id: bump
+        run: |
+          scripts/check-upstream.sh --write
+          if git diff --quiet versions.env; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name "orneos-bot" && git config user.email "contact@orneos.eu"
+            . ./versions.env && git commit -qam "Upstream: desktop $DESKTOP_TAG, android $ANDROID_TAG" && git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - id: v
+        # Build number: UTC year, day, hour (same scheme as tools/client-build.sh on the server), compared by the updater
+        run: |
+          . ./versions.env
+          { echo "desktop=$DESKTOP_TAG"; echo "android=$ANDROID_TAG"; echo "buildnr=$(date -u +%y%j%H)"; } >> "$GITHUB_OUTPUT"
+
+  # The scheduled run only builds when a new official release came out
+  android:
+    needs: upstream
+    if: github.event_name != 'schedule' || needs.upstream.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.android }} https://github.com/nextcloud/android.git upstream
+      - run: scripts/apply-android.sh upstream
+      - run: scripts/build-android.sh upstream debug
+
+  linux:
+    needs: upstream
+    if: github.event_name != 'schedule' || needs.upstream.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.desktop }} https://github.com/nextcloud/desktop.git upstream
+      - run: scripts/apply-desktop.sh upstream
+      - run: scripts/build-desktop-linux.sh upstream ${{ needs.upstream.outputs.buildnr }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: upstream/orneos-*.AppImage
+
+  # KDE Craft, as in upstream's windows-build-and-test.yml; NSIS installer (Packager/PackageType in craftmaster.ini)
+  windows:
+    needs: upstream
+    if: github.event_name != 'schedule' || needs.upstream.outputs.changed == 'true'
+    runs-on: windows-2022
+    env:
+      CRAFT_TARGET: windows-msvc2022_64-cl
+      CRAFT_MASTER_LOCATION: ${{ github.workspace }}\CraftMaster
+      CRAFT_MASTER_CONFIG: ${{ github.workspace }}\upstream\craftmaster.ini
+    steps:
+      - uses: actions/checkout@v4
+      - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.desktop }} https://github.com/nextcloud/desktop.git upstream
+        shell: bash
+      - run: scripts/apply-desktop.sh upstream
+        shell: bash
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Craft refs
+        id: refs
+        shell: bash
+        run: |
+          echo "kde=$(grep -oP 'craft-blueprints-kde\.revision\s*=\s*\K\S+' upstream/craftmaster.ini)" >> "$GITHUB_OUTPUT"
+          echo "nextcloud=$(grep -oP 'craft-blueprints-nextcloud\.revision\s*=\s*\K\S+' upstream/craftmaster.ini)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.CRAFT_MASTER_LOCATION }}
+            ${{ github.workspace }}\craft-clone
+            ${{ github.workspace }}\${{ env.CRAFT_TARGET }}
+          key: craft-${{ env.CRAFT_TARGET }}-${{ needs.upstream.outputs.desktop }}
+      - name: Craft and dependencies
+        shell: pwsh
+        run: |
+          if (!(Test-Path "${{ env.CRAFT_MASTER_LOCATION }}")) {
+            & cmd /C "git clone -q --depth=1 https://invent.kde.org/packaging/craftmaster.git ${{ env.CRAFT_MASTER_LOCATION }} 2>&1"
+          }
+          function craft() {
+            python "${{ env.CRAFT_MASTER_LOCATION }}\CraftMaster.py" --config "${{ env.CRAFT_MASTER_CONFIG }}" --target ${{ env.CRAFT_TARGET }} -c $args
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          craft --add-blueprint-repository "https://github.com/nextcloud/craft-blueprints-kde.git|${{ steps.refs.outputs.kde }}|"
+          craft --add-blueprint-repository "https://github.com/nextcloud/craft-blueprints-nextcloud.git|${{ steps.refs.outputs.nextcloud }}|"
+          craft craft
+          craft --install-deps nextcloud-client
+      - run: choco install inkscape -y --no-progress
+      - name: Build and package (unsigned)
+        shell: pwsh
+        run: |
+          echo "${{ github.workspace }}\${{ env.CRAFT_TARGET }}\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $env:PATH = "${{ github.workspace }}\${{ env.CRAFT_TARGET }}\bin;$env:PATH"
+          function craft() {
+            python "${{ env.CRAFT_MASTER_LOCATION }}\CraftMaster.py" --config "${{ env.CRAFT_MASTER_CONFIG }}" --target ${{ env.CRAFT_TARGET }} -c $args
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          craft --src-dir "${{ github.workspace }}\upstream" --options "nextcloud-client.cmakeOptions=-DMIRALL_VERSION_BUILD=${{ needs.upstream.outputs.buildnr }}" nextcloud-client
+          craft --src-dir "${{ github.workspace }}\upstream" --package nextcloud-client
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Get-ChildItem -Path "${{ github.workspace }}" -Recurse -Include *.exe -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match '(?i)orneos.*(setup|install|win|x64)' -and $_.FullName -notmatch '\\(build|image|work)\\' } |
+            ForEach-Object { Write-Host $_.FullName; Copy-Item $_.FullName dist\ }
+          if (!(Get-ChildItem dist)) { Write-Error "no installer found"; exit 1 }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*.exe
+
+  # admin/osx/mac-crafter: Craft + app bundle + .pkg. No Apple signature (ad hoc only) and no Sparkle:
+  # macOS users get a "new version" notice linking to the download page.
+  macos:
+    needs: upstream
+    if: github.event_name != 'schedule' || needs.upstream.outputs.changed == 'true'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.desktop }} https://github.com/nextcloud/desktop.git upstream
+      - run: scripts/apply-desktop.sh upstream
+      - name: Build (arm64, unsigned)
+        working-directory: upstream/admin/osx/mac-crafter
+        run: |
+          KDE=$(grep -oP 'craft-blueprints-kde\.revision\s*=\s*\K\S+' ../../../craftmaster.ini || echo master)
+          swift run mac-crafter build --app-name Orneos --arch arm64 --build-type Release \
+            --kde-blueprints-git-ref "$KDE" --disable-autoupdater --package \
+            --build-path "$RUNNER_TEMP/build" --product-path "$RUNNER_TEMP/product"
+      - name: Collect
+        run: |
+          mkdir dist
+          find "$RUNNER_TEMP/product" -maxdepth 2 \( -name '*.pkg' -o -name '*.dmg' \) -exec cp {} dist/ \;
+          if [ -z "$(ls dist)" ]; then (cd "$RUNNER_TEMP/product" && ditto -c -k --keepParent Orneos.app "$GITHUB_WORKSPACE/dist/Orneos-macos-arm64.zip"); fi
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*
+
+  release:
+    needs: [upstream, linux, windows, macos]
+    if: always() && needs.linux.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: dist }
+      - name: Draft release
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          gh release create "build-${{ github.run_number }}" --repo "${{ github.repository }}" --draft \
+            --title "Orneos desktop ${{ needs.upstream.outputs.desktop }} (build ${{ needs.upstream.outputs.buildnr }})" \
+            --notes "Built from nextcloud/desktop ${{ needs.upstream.outputs.desktop }} with the Orneos overlay at ${{ github.sha }}. Windows: ${{ needs.windows.result }}, macOS: ${{ needs.macos.result }}." \
+            dist/*/*

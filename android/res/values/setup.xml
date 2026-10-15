@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Orneos branding for the Nextcloud Android app.
+  Copied into app/src/generic/res/values/ by scripts/apply-android.sh: a flavor's resources override the
+  ones of the same name in app/src/main/res/values/setup.xml, so only what we change is listed here.
+-->
+<resources>
+    <!-- Name, and ids distinct from the official app so both can be installed side by side.
+         ⚠ Never change account_type and the authorities once published: existing accounts would be lost.
+         Orneos Talk (later) must use the same account_type to reuse the Files app account. -->
+    <string name="app_name">Orneos</string>
+    <string name="account_type">eu.orneos</string>
+    <string name="authority">eu.orneos.client.provider</string>
+    <string name="users_and_groups_search_authority">eu.orneos.client.providers.UsersAndGroupsSearchProvider</string>
+    <string name="users_and_groups_share_with">eu.orneos.client.providers.UsersAndGroupsSearchProvider.action.SHARE_WITH</string>
+    <string name="document_provider_authority">eu.orneos.documents</string>
+    <string name="file_provider_authority">eu.orneos.files</string>
+    <string name="image_cache_provider_authority">eu.orneos.imageCache.provider</string>
+    <string name="db_file">orneos.db</string>
+    <string name="db_name">orneos</string>
+    <string name="data_folder">orneos</string>
+    <string name="default_display_name_for_root_folder">Orneos</string>
+    <!-- The user agent stays Nextcloud's: the server recognises its clients by it -->
+    <string name="name_for_branded_user_agent">Orneos</string>
+    <bool name="is_branded_client">true</bool>
+
+    <!-- No server to choose: straight to the Orneos sign-in in the browser (Login Flow v2 on app.orneos.eu) -->
+    <string name="webview_login_url" translatable="false">https://app.orneos.eu/index.php/login/v2</string>
+    <bool name="show_server_url_input">false</bool>
+    <bool name="show_provider_or_own_installation">false</bool>
+    <string name="provider_registration_server">https://orneos.eu/fr/inscription</string>
+
+    <!-- Nextcloud's own onboarding, news and beta programme do not apply -->
+    <bool name="disable_intro">true</bool>
+    <bool name="show_whats_new">false</bool>
+    <bool name="participate_enabled">false</bool>
+    <bool name="recommend_enabled">false</bool>
+    <bool name="show_outdated_server_warning">false</bool>
+
+    <!-- Updates of the APK installed from orneos.eu: the app reads dev_latest (a versionCode) and offers
+         dev_link + versionCode + ".apk". Files published in public_html/downloads/android/. -->
+    <bool name="dev_version_direct_download_enabled">true</bool>
+    <string name="dev_link">https://orneos.eu/downloads/android/orneos-</string>
+    <string name="dev_latest">https://orneos.eu/downloads/android/latest</string>
+    <string name="dev_changelog">https://orneos.eu/downloads/android/CHANGELOG.md</string>
+
+    <!-- Ornis palette -->
+    <color name="primary">#002FA7</color>
+    <color name="primary_dark">#00237D</color>
+    <color name="color_accent">#002FA7</color>
+    <color name="login_text_color">#ffffff</color>
+    <color name="login_text_hint_color">#C9D3F3</color>
+
+    <!-- Help, legal, source (GPL: the source of what we ship must be available) -->
+    <string name="url_help">https://orneos.eu/fr/aide</string>
+    <string name="privacy_url">https://orneos.eu/fr/mentions-legales</string>
+    <bool name="imprint_enabled">true</bool>
+    <string name="url_imprint">https://orneos.eu/fr/mentions-legales</string>
+    <string name="url_app_download">https://orneos.eu/fr/tableau-de-bord/appareils</string>
+    <string name="sourcecode_url" translatable="false">https://github.com/Nalem14/orneos-clients</string>
+    <string name="url_server_install">https://orneos.eu</string>
+    <string name="help_link" translatable="false">https://orneos.eu/fr/aide</string>
+    <string name="osm_geocoder_contact" translatable="false">contact@orneos.eu</string>
+</resources>

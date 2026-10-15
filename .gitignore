@@ -1,0 +1,7 @@
+# Build checkouts and outputs never go here
+/upstream/
+*.apk
+*.AppImage
+*.msi
+*.dmg
+*.pkg

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Orneos mark (clients/brand/mark.svg). Replaces the Nextcloud trademark drawable of the same name. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp" android:height="100dp" android:viewportWidth="72" android:viewportHeight="36">
+  <group android:translateX="18">
+    <path android:pathData="M8,22c4,-7 8,-10 10,-10s6,3 10,10" android:strokeColor="#FFFFFF" android:strokeWidth="3" android:strokeLineCap="square" android:fillColor="#00000000"/>
+    <path android:pathData="M13,22c2,-3.2 3.6,-4.5 5,-4.5s3,1.3 5,4.5" android:strokeColor="#F0A202" android:strokeWidth="3" android:strokeLineCap="square" android:fillColor="#00000000"/>
+    <path android:pathData="M7,27h22" android:strokeColor="#FFFFFF" android:strokeWidth="2" android:fillColor="#00000000"/>
+  </group>
+</vector>
