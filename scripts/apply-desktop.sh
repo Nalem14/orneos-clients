@@ -15,6 +15,7 @@ grep -q 'orneos/branding.cmake' "$SRC/NEXTCLOUD.cmake" \
 
 # 2. Icons and logos (replace Nextcloud trademarks)
 cp "$HERE"/desktop/theme/colored/* "$SRC/theme/colored/"
+cp "$HERE"/desktop/theme/orneos.VisualElementsManifest.xml "$SRC/theme/" # Windows start menu tile (named after the executable)
 
 # 3. Windows CfApi shell extension ids are set in CMakeLists.txt after NEXTCLOUD.cmake: ours, fixed forever
 replace() { # file, old, new

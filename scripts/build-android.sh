@@ -30,7 +30,8 @@ if [ "$MODE" = release ]; then
         "/sdk/build-tools/\$(ls /sdk/build-tools | sort -V | tail -1)/aapt2 dump badging /out/$(basename "$APK")" | grep -oP "versionCode='\K\d+")
     docker run --rm -v "$CACHE/sdk":/sdk -v "$OUT":/out -v "$(dirname "$ORNEOS_KEYSTORE")":/ks -e PASS="$ORNEOS_KEYSTORE_PASS" eclipse-temurin:21-jdk bash -c \
         "/sdk/build-tools/\$(ls /sdk/build-tools | sort -V | tail -1)/apksigner sign --ks /ks/$(basename "$ORNEOS_KEYSTORE") --ks-key-alias '$ORNEOS_KEY_ALIAS' \
-         --ks-pass env:PASS --out /out/orneos-$CODE.apk /out/$(basename "$APK")"
+         --ks-pass env:PASS --v4-signing-enabled false --out /out/orneos-$CODE.apk /out/$(basename "$APK") \
+         && chown $(id -u):$(id -g) /out/orneos-$CODE.apk"
     echo "$CODE" > "$OUT/latest"
 fi
 ls -la "$OUT"
