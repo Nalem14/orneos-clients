@@ -144,7 +144,7 @@ jobs:
   macos:
     needs: upstream
     if: github.event_name != 'schedule' || needs.upstream.outputs.changed == 'true'
-    runs-on: macos-15
+    runs-on: macos-26 # Xcode 26 SDK required (NSGlassEffectView), like upstream CI
     steps:
       - uses: actions/checkout@v4
       - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.desktop }} https://github.com/nextcloud/desktop.git upstream
