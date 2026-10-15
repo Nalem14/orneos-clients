@@ -23,7 +23,9 @@ set( APPLICATION_REV_DOMAIN_DBUS  "desktopclient.orneos.eu" )
 set( APPLICATION_VIRTUALFILE_SUFFIX "orneos" )
 set( LINUX_PACKAGE_SHORTNAME "orneos" )
 set( LINUX_APPLICATION_ID "${APPLICATION_REV_DOMAIN}.${LINUX_PACKAGE_SHORTNAME}" )
-set( DEVELOPMENT_TEAM "" CACHE STRING "Apple Development Team ID" FORCE ) # set from CI once the Apple account exists
+# macOS: the code builds the App Group id from it, so it must not be empty. No Apple account (unsigned builds):
+# an Orneos placeholder, never Nextcloud's team (its App Group would clash). Finder badges need a real signed team.
+set( DEVELOPMENT_TEAM "ORNEOSEU00" CACHE STRING "Apple Development Team ID" FORCE )
 
 # Ornis palette (docs/ROADMAP.md)
 set( NEXTCLOUD_BACKGROUND_COLOR "#002FA7" )
