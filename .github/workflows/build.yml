@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.desktop }} https://github.com/nextcloud/desktop.git upstream
-      - run: scripts/apply-desktop.sh upstream
+      - run: ORNEOS_BUILDNR=${{ needs.upstream.outputs.buildnr }} scripts/apply-desktop.sh upstream
       - run: scripts/build-desktop-linux.sh upstream ${{ needs.upstream.outputs.buildnr }}
       - uses: actions/upload-artifact@v4
         with:
@@ -83,7 +83,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.desktop }} https://github.com/nextcloud/desktop.git upstream
         shell: bash
-      - run: scripts/apply-desktop.sh upstream
+      - run: ORNEOS_BUILDNR=${{ needs.upstream.outputs.buildnr }} scripts/apply-desktop.sh upstream
         shell: bash
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
@@ -124,7 +124,10 @@ jobs:
             python "${{ env.CRAFT_MASTER_LOCATION }}\CraftMaster.py" --config "${{ env.CRAFT_MASTER_CONFIG }}" --target ${{ env.CRAFT_TARGET }} -c $args
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
-          craft --src-dir "${{ github.workspace }}\upstream" --options "nextcloud-client.cmakeOptions=-DMIRALL_VERSION_BUILD=${{ needs.upstream.outputs.buildnr }}" nextcloud-client
+          # Upstream recipe bug (stable-35.0): nextcloud-client.py uses os without importing it
+          $bp = "${{ github.workspace }}\${{ env.CRAFT_TARGET }}\etc\blueprints\locations\craft-blueprints-nextcloud\nextcloud-client\nextcloud-client.py"
+          if (!(Select-String -Path $bp -Pattern '^import os' -Quiet)) { Set-Content $bp ("import os`n" + (Get-Content $bp -Raw)) -NoNewline }
+          craft --src-dir "${{ github.workspace }}\upstream" nextcloud-client
           craft --src-dir "${{ github.workspace }}\upstream" --package nextcloud-client
           New-Item -ItemType Directory -Force dist | Out-Null
           Get-ChildItem -Path "${{ github.workspace }}" -Recurse -Include *.exe -ErrorAction SilentlyContinue |
@@ -145,7 +148,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.desktop }} https://github.com/nextcloud/desktop.git upstream
-      - run: scripts/apply-desktop.sh upstream
+      - run: ORNEOS_BUILDNR=${{ needs.upstream.outputs.buildnr }} scripts/apply-desktop.sh upstream
       - name: Build (arm64, unsigned)
         working-directory: upstream/admin/osx/mac-crafter
         run: |

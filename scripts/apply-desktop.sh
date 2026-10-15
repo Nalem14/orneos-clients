@@ -32,4 +32,14 @@ if [ -f "$SRC/admin/linux/build-appimage.sh" ]; then
     replace "$SRC/admin/linux/build-appimage.sh" 'apps/Nextcloud.png' 'apps/Orneos.png'
 fi
 
+# 5. Build number (35.0.0.<n>, compared by the updater): every platform reads it from VERSION.cmake
+if [ -n "${ORNEOS_BUILDNR:-}" ]; then
+    replace "$SRC/VERSION.cmake" 'set(MIRALL_VERSION_BUILD "0")' "set(MIRALL_VERSION_BUILD \"$ORNEOS_BUILDNR\")"
+fi
+
+# 6. Craft builds (Windows, macOS): no test suite in release builds
+if grep -q 'nextcloud-client.buildTests = True' "$SRC/craftmaster.ini" 2>/dev/null; then
+    replace "$SRC/craftmaster.ini" 'nextcloud-client.buildTests = True' 'nextcloud-client.buildTests = False'
+fi
+
 echo "desktop overlay applied on $(git -C "$SRC" describe --tags 2>/dev/null || echo "$SRC")"
