@@ -234,7 +234,7 @@ jobs:
         run: |
           V="${{ needs.upstream.outputs.talk_desktop }}"; V="${V#v}"
           mkdir dist
-          find upstream/out/make -type f \( -name '*.dmg' -o -name '*Setup.exe' -o -name '*.zip' \) | while read -r f; do
+          find upstream/out/make -type f \( -name '*.dmg' -o -name '*.exe' -o -name '*.zip' \) | while read -r f; do
             cp "$f" "dist/Orneos-Meet-$V-${{ matrix.label }}.${f##*.}"
           done
           ls -la dist; [ -n "$(ls dist)" ]
