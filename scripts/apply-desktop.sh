@@ -32,12 +32,18 @@ if [ -f "$SRC/admin/linux/build-appimage.sh" ]; then
     replace "$SRC/admin/linux/build-appimage.sh" 'apps/Nextcloud.png' 'apps/Orneos.png'
 fi
 
-# 5. Build number (35.0.0.<n>, compared by the updater): every platform reads it from VERSION.cmake
+# 5. macOS: Sparkle accepts only updates signed with our key (private half on the orneos.eu server, used by
+#    tools/client-release.php); and the local network permission text names us
+PLIST="$SRC/cmake/modules/MacOSXBundleInfo.plist.in"
+replace "$PLIST" '<string>c3RcfDWDayvsYSZW8FhZN1UOJhvPVN30zleb4zOqbtU=</string>' "<string>$(cat "$HERE/desktop/sparkle-ed25519.pub")</string>"
+replace "$PLIST" 'Nextcloud needs access to your local network to connect to Nextcloud servers hosted there.' 'Orneos needs access to your local network to reach the Orneos servers.'
+
+# 6. Build number (35.0.0.<n>, compared by the updater): every platform reads it from VERSION.cmake
 if [ -n "${ORNEOS_BUILDNR:-}" ]; then
     replace "$SRC/VERSION.cmake" 'set(MIRALL_VERSION_BUILD "0")' "set(MIRALL_VERSION_BUILD \"$ORNEOS_BUILDNR\")"
 fi
 
-# 6. Craft builds (Windows, macOS): no test suite in release builds
+# 7. Craft builds (Windows, macOS): no test suite in release builds
 if grep -q 'nextcloud-client.buildTests = True' "$SRC/craftmaster.ini" 2>/dev/null; then
     replace "$SRC/craftmaster.ini" 'nextcloud-client.buildTests = True' 'nextcloud-client.buildTests = False'
 fi

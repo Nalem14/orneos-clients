@@ -36,7 +36,7 @@ Dans les deux cas, c'est le Login Flow v2 : le navigateur s'ouvre sur la connexi
 | | Canal | Côté serveur |
 |---|---|---|
 | Windows | l'updater intégré télécharge l'installeur (`.exe` NSIS) et l'installe en silence (`/S`) | `/updates/desktop` (`ClientUpdateController`) lit `private/clients/desktop.json` |
-| macOS | sans Sparkle pour l'instant : un avis « nouvelle version » qui renvoie vers la page Appareils | même flux |
+| macOS | Sparkle (dans /Applications) : télécharge le DMG et remplace l'app ; signature Ed25519 vérifiée avec `desktop/sparkle-ed25519.pub` (clé privée sur le serveur, `private/clients/sparkle-ed25519.key`, signature automatique à la publication) | même flux, en appcast |
 | Linux | notification, lien vers la page Appareils | même flux |
 | Android | l'app lit `downloads/android/latest`, propose `orneos-<versionCode>.apk` | fichiers statiques |
 
@@ -55,11 +55,11 @@ La page Appareils devra expliquer ces étapes quand les apps y seront proposées
 
 - Android : `applicationId` `eu.orneos.files`, `account_type` `eu.orneos`, les `authority` de `setup.xml`, la clé de signature `private/clients/android-release.jks` du serveur orneos.eu (sans elle, aucune mise à jour possible : elle doit figurer dans les sauvegardes).
 - Windows : `WIN_MSI_UPGRADE_CODE` et les GUID de `branding.cmake` / `apply-desktop.sh`.
+- macOS : la clé Sparkle (`desktop/sparkle-ed25519.pub` et sa moitié privée sur le serveur) ; la changer rendrait les apps installées sourdes aux mises à jour.
 
 ## Reste à faire
 
 - **Windows et macOS** : les jobs CI (KDE Craft, mac-crafter) sont à valider au premier passage.
-- **macOS** : mises à jour automatiques avec Sparkle (clé EdDSA gratuite, indépendante d'Apple).
 - **Talk Android** (`nextcloud/talk-android`) : même principe, même `account_type`. Notifications push à prévoir (proxy et Firebase à nous, ou UnifiedPush).
 - **Textes** : quelques traductions officielles disent encore « Nextcloud » en dur ; à reprendre par surcharge de `strings.xml` si elles se voient.
 - **iOS** : pas d'app Orneos. Les utilisateurs prennent l'app officielle Nextcloud et se connectent par le code QR de la page Appareils.

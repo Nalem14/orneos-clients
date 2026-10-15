@@ -148,8 +148,8 @@ jobs:
           name: windows
           path: dist/*.exe
 
-  # admin/osx/mac-crafter: Craft + app bundle + .pkg. No Apple signature (ad hoc only) and no Sparkle:
-  # macOS users get a "new version" notice linking to the download page.
+  # admin/osx/mac-crafter: Craft + app bundle, then a DMG. No Apple signature (ad hoc only). Sparkle updates,
+  # verified with our EdDSA key (desktop/sparkle-ed25519.pub; the server signs each published DMG).
   macos:
     needs: upstream
     if: github.event_name != 'schedule' || needs.upstream.outputs.changed == 'true'
@@ -163,13 +163,17 @@ jobs:
         run: |
           KDE=$(sed -n 's/^craft\/craft-blueprints-kde\.revision *= *//p' ../../../craftmaster.ini)
           swift run mac-crafter build --app-name Orneos --arch arm64 --build-type Release \
-            --kde-blueprints-git-ref "$KDE" --disable-auto-updater \
+            --kde-blueprints-git-ref "$KDE" \
             --build-path "$RUNNER_TEMP/build" --product-path "$RUNNER_TEMP/product"
       - name: DMG (drag Orneos.app to Applications)
         run: |
           APP="$RUNNER_TEMP/product/Orneos.app"
           [ -d "$APP" ] || { echo "Orneos.app not built"; exit 1; }
           [ -x "$APP/Contents/MacOS/Orneos" ] || { echo "Orneos.app has no executable"; ls "$APP/Contents/MacOS"; exit 1; }
+          [ -d "$APP/Contents/Frameworks/Sparkle.framework" ] || { echo "Sparkle missing: no automatic updates"; exit 1; }
+          grep -qF "$(cat "$GITHUB_WORKSPACE/desktop/sparkle-ed25519.pub")" "$APP/Contents/Info.plist" || { echo "Info.plist lacks our Sparkle key"; exit 1; }
+          # No Apple account: one consistent ad hoc signature over the app and its frameworks (Sparkle included)
+          codesign --force --deep --sign - "$APP" && codesign --verify --deep --strict "$APP"
           VERSION="${{ needs.upstream.outputs.desktop }}"; VERSION="${VERSION#v}.${{ needs.upstream.outputs.buildnr }}"
           mkdir -p "$RUNNER_TEMP/dmg" dist
           cp -R "$APP" "$RUNNER_TEMP/dmg/" && ln -s /Applications "$RUNNER_TEMP/dmg/Applications"
