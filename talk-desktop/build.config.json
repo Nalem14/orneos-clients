@@ -8,8 +8,6 @@
 	"brandFontColor": "#FFFFFF",
 	"helpUrl": "https://orneos.eu/fr/aide",
 	"privacyUrl": "https://orneos.eu/fr/mentions-legales",
-	"primaryColor": "#002FA7",
-	"backgroundColor": "#0A1F66",
 	"appleAppBundleId": "eu.orneos.meet.mac",
 	"winAppId": "eu.orneos.meet",
 	"linuxAppId": "eu.orneos.meet",
