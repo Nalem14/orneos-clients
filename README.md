@@ -38,6 +38,10 @@ Même principe que l'app Fichiers (`scripts/apply-talk.sh`, saveur `generic`, pa
 
 **Notifications** : le cloud les envoie lui-même en **Web Push** (app `notifications`, `webpush_enabled`), sans le service de Nextcloud GmbH. Sur le téléphone, le distributeur FCM intégré de la saveur `generic` les reçoit, via **notre projet Firebase** (`orneos-bb6d6`, app `eu.orneos.talk`, valeurs dans `talk/res/values/setup.xml`). Le contenu est chiffré de bout en bout (RFC 8291) : Google ne voit passer que des paquets opaques. La clé d'API est restreinte au paquet et à l'empreinte de notre clé de signature.
 
+## Orneos Meet pour ordinateur (Talk Desktop)
+
+`nextcloud/talk-desktop` (Electron) a un point de branding officiel : `.overrides/build.config.json` (`talk-desktop/build.config.json` : nom, serveur imposé `app.orneos.eu`, identifiants `eu.orneos.meet`, couleurs). `scripts/apply-talk-desktop.sh` le pose et remplace les images de `img/` (générées par `scripts/make-talk-desktop-icons.py`). Construit par la CI (job `meet-desktop` : Windows `.exe`, Mac universel `.dmg` signé « ad hoc », Linux `.zip`). Une fois rebrandé, il ne cherche plus ses mises à jour : la publication prévient ses utilisateurs dans la cloche du cloud.
+
 ## Mises à jour des utilisateurs
 
 | | Canal | Côté serveur |

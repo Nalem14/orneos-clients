@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['versions.env', 'desktop/**', 'android/**', 'talk/**', 'scripts/**', '.github/workflows/**']
+    paths: ['versions.env', 'desktop/**', 'android/**', 'talk/**', 'talk-desktop/**', 'scripts/**', '.github/workflows/**']
 
 permissions:
   contents: write
@@ -25,6 +25,7 @@ jobs:
       desktop: ${{ steps.v.outputs.desktop }}
       android: ${{ steps.v.outputs.android }}
       talk: ${{ steps.v.outputs.talk }}
+      talk_desktop: ${{ steps.v.outputs.talk_desktop }}
       changed: ${{ steps.bump.outputs.changed }}
       buildnr: ${{ steps.v.outputs.buildnr }}
     steps:
@@ -44,7 +45,7 @@ jobs:
         # Build number: UTC year, day, hour (same scheme as tools/client-build.sh on the server), compared by the updater
         run: |
           . ./versions.env
-          { echo "desktop=$DESKTOP_TAG"; echo "android=$ANDROID_TAG"; echo "talk=$TALK_TAG"; echo "buildnr=$(date -u +%y%j%H)"; } >> "$GITHUB_OUTPUT"
+          { echo "desktop=$DESKTOP_TAG"; echo "android=$ANDROID_TAG"; echo "talk=$TALK_TAG"; echo "talk_desktop=$TALK_DESKTOP_TAG"; echo "buildnr=$(date -u +%y%j%H)"; } >> "$GITHUB_OUTPUT"
 
   # The scheduled run only builds when a new official release came out
   android:
@@ -196,8 +197,54 @@ jobs:
           name: macos
           path: dist/*
 
+  # Orneos Meet for desktop (nextcloud/talk-desktop, Electron): official branding hook, unsigned like the sync client
+  meet-desktop:
+    needs: upstream
+    if: github.event_name != 'schedule' || needs.upstream.outputs.changed == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, build: 'build:linux', package: 'package:linux', label: linux-x64 }
+          - { os: windows-latest, build: 'build:windows:x64', package: 'package:windows:x64:exe', label: windows-x64 }
+          - { os: macos-15, build: 'build:mac', package: 'package:mac', label: macos-universal }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run: { shell: bash }
+    steps:
+      - uses: actions/checkout@v4
+      - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.talk_desktop }} https://github.com/nextcloud/talk-desktop.git upstream
+      - run: scripts/apply-talk-desktop.sh upstream
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - name: Build
+        working-directory: upstream
+        run: npm ci --no-audit --no-fund && npm run ${{ matrix.build }}
+      - name: Ad hoc signature (macOS refuses unsigned arm64 apps)
+        if: runner.os == 'macOS'
+        working-directory: upstream
+        run: |
+          APP=$(find out -maxdepth 2 -name 'Orneos Meet.app' -type d | head -1)
+          [ -n "$APP" ] || { echo "Orneos Meet.app not found"; find out -maxdepth 3; exit 1; }
+          codesign --force --deep --sign - "$APP" && codesign --verify --deep --strict "$APP"
+      - name: Package
+        working-directory: upstream
+        run: npm run ${{ matrix.package }}
+      - name: Collect
+        run: |
+          V="${{ needs.upstream.outputs.talk_desktop }}"; V="${V#v}"
+          mkdir dist
+          find upstream/out/make -type f \( -name '*.dmg' -o -name '*Setup.exe' -o -name '*.zip' \) | while read -r f; do
+            cp "$f" "dist/Orneos-Meet-$V-${{ matrix.label }}.${f##*.}"
+          done
+          ls -la dist; [ -n "$(ls dist)" ]
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meet-${{ matrix.label }}
+          path: dist/*
+
   release:
-    needs: [upstream, linux, windows, macos]
+    needs: [upstream, linux, windows, macos, meet-desktop]
     if: always() && needs.linux.result == 'success'
     runs-on: ubuntu-latest
     steps:
@@ -208,5 +255,5 @@ jobs:
         run: |
           gh release create "build-${{ github.run_number }}" --repo "${{ github.repository }}" --draft \
             --title "Orneos desktop ${{ needs.upstream.outputs.desktop }} (build ${{ needs.upstream.outputs.buildnr }})" \
-            --notes "Built from nextcloud/desktop ${{ needs.upstream.outputs.desktop }} with the Orneos overlay at ${{ github.sha }}. Windows: ${{ needs.windows.result }}, macOS: ${{ needs.macos.result }}." \
+            --notes "Built from nextcloud/desktop ${{ needs.upstream.outputs.desktop }} with the Orneos overlay at ${{ github.sha }}. Windows: ${{ needs.windows.result }}, macOS: ${{ needs.macos.result }}, Orneos Meet desktop ${{ needs.upstream.outputs.talk_desktop }}: ${{ needs.meet-desktop.result }}." \
             dist/*/*

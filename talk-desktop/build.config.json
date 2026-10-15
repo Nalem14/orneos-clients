@@ -1,0 +1,21 @@
+{
+	"applicationName": "Orneos Meet",
+	"description": "Discussions, appels et visioconférences Orneos",
+	"domain": "https://app.orneos.eu",
+	"enforceDomain": true,
+	"brandColor": "#002FA7",
+	"brandGradient": "linear-gradient(40deg, #002FA7 0%, #0A1F66 100%)",
+	"brandFontColor": "#FFFFFF",
+	"helpUrl": "https://orneos.eu/fr/aide",
+	"privacyUrl": "https://orneos.eu/fr/mentions-legales",
+	"primaryColor": "#002FA7",
+	"backgroundColor": "#0A1F66",
+	"appleAppBundleId": "eu.orneos.meet.mac",
+	"winAppId": "eu.orneos.meet",
+	"linuxAppId": "eu.orneos.meet",
+	"windowsExe": true,
+	"windowsMsi": false,
+	"macosDmg": true,
+	"linuxFlatpak": false,
+	"linuxZip": true
+}
