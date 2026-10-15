@@ -163,13 +163,17 @@ jobs:
         run: |
           KDE=$(sed -n 's/^craft\/craft-blueprints-kde\.revision *= *//p' ../../../craftmaster.ini)
           swift run mac-crafter build --app-name Orneos --arch arm64 --build-type Release \
-            --kde-blueprints-git-ref "$KDE" --disable-auto-updater --package \
+            --kde-blueprints-git-ref "$KDE" --disable-auto-updater \
             --build-path "$RUNNER_TEMP/build" --product-path "$RUNNER_TEMP/product"
-      - name: Collect
+      - name: DMG (drag Orneos.app to Applications)
         run: |
-          mkdir dist
-          find "$RUNNER_TEMP/product" -maxdepth 2 \( -name '*.pkg' -o -name '*.dmg' \) -exec cp {} dist/ \;
-          if [ -z "$(ls dist)" ]; then (cd "$RUNNER_TEMP/product" && ditto -c -k --keepParent Orneos.app "$GITHUB_WORKSPACE/dist/Orneos-macos-arm64.zip"); fi
+          APP="$RUNNER_TEMP/product/Orneos.app"
+          [ -d "$APP" ] || { echo "Orneos.app not built"; exit 1; }
+          [ -x "$APP/Contents/MacOS/Orneos" ] || { echo "Orneos.app has no executable"; ls "$APP/Contents/MacOS"; exit 1; }
+          VERSION="${{ needs.upstream.outputs.desktop }}"; VERSION="${VERSION#v}.${{ needs.upstream.outputs.buildnr }}"
+          mkdir -p "$RUNNER_TEMP/dmg" dist
+          cp -R "$APP" "$RUNNER_TEMP/dmg/" && ln -s /Applications "$RUNNER_TEMP/dmg/Applications"
+          hdiutil create -volname Orneos -srcfolder "$RUNNER_TEMP/dmg" -ov -format UDZO "dist/Orneos-$VERSION-macos-arm64.dmg"
           ls -la dist
       - uses: actions/upload-artifact@v4
         with:
