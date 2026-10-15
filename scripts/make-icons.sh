@@ -10,6 +10,7 @@ for n in wizard_logo wizard-nextcloud; do
     cp "$SRC" "$C/$n.svg"; png "$SRC" 64 "$C/$n.png"; png "$SRC" 128 "$C/$n@2x.png"
 done
 png "$SRC" 150 "$C/Orneos-w10starttile.png"
+convert -background none -density 72 "$SRC" -define icon:auto-resize=256,128,64,48,32,24,16 desktop/Orneos-installer.ico
 
 # Android launcher fallbacks (the adaptive icon itself is a vector, res/drawable/ic_launcher_*.xml)
 for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do

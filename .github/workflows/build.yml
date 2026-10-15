@@ -125,7 +125,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
           # The recipe names the installer, its shortcuts (the executable) and the uninstall entry: Orneos
-          python scripts/patch-craft-blueprint.py "${{ github.workspace }}\${{ env.CRAFT_TARGET }}\etc\blueprints\locations\craft-blueprints-nextcloud\nextcloud-client\nextcloud-client.py"
+          python scripts/patch-craft-blueprint.py "${{ github.workspace }}\${{ env.CRAFT_TARGET }}\etc\blueprints\locations\craft-blueprints-nextcloud\nextcloud-client\nextcloud-client.py" desktop\Orneos-installer.ico
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           craft --src-dir "${{ github.workspace }}\upstream" nextcloud-client
           craft --src-dir "${{ github.workspace }}\upstream" --package nextcloud-client
@@ -135,6 +135,13 @@ jobs:
           if (!$exe) { Write-Error "no installer found"; exit 1 }
           $version = "${{ needs.upstream.outputs.desktop }}".TrimStart('v') + ".${{ needs.upstream.outputs.buildnr }}"
           Copy-Item $exe.FullName "dist\Orneos-$version-x64-setup.exe"
+          # The installer must really ship the client (Craft's blacklist once stripped it): open it and look
+          & "C:\Program Files\7-Zip\7z.exe" x -y -o"$env:RUNNER_TEMP\setup" $exe.FullName | Out-Null
+          $payload = Get-ChildItem "$env:RUNNER_TEMP\setup\*.7z" | Select-Object -First 1
+          $listing = & "C:\Program Files\7-Zip\7z.exe" l $payload.FullName
+          foreach ($f in @('bin\orneos.exe', 'bin\orneoscmd.exe', 'bin\orneossync.dll')) {
+            if (!($listing | Select-String -SimpleMatch $f -Quiet)) { Write-Error "installer is missing $f"; exit 1 }
+          }
           Get-ChildItem dist
       - uses: actions/upload-artifact@v4
         with:
