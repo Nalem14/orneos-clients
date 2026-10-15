@@ -124,16 +124,18 @@ jobs:
             python "${{ env.CRAFT_MASTER_LOCATION }}\CraftMaster.py" --config "${{ env.CRAFT_MASTER_CONFIG }}" --target ${{ env.CRAFT_TARGET }} -c $args
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
-          # Upstream recipe bug (stable-35.0): nextcloud-client.py uses os without importing it
-          $bp = "${{ github.workspace }}\${{ env.CRAFT_TARGET }}\etc\blueprints\locations\craft-blueprints-nextcloud\nextcloud-client\nextcloud-client.py"
-          if (!(Select-String -Path $bp -Pattern '^import os' -Quiet)) { Set-Content $bp ("import os`n" + (Get-Content $bp -Raw)) -NoNewline }
+          # The recipe names the installer, its shortcuts (the executable) and the uninstall entry: Orneos
+          python scripts/patch-craft-blueprint.py "${{ github.workspace }}\${{ env.CRAFT_TARGET }}\etc\blueprints\locations\craft-blueprints-nextcloud\nextcloud-client\nextcloud-client.py"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           craft --src-dir "${{ github.workspace }}\upstream" nextcloud-client
           craft --src-dir "${{ github.workspace }}\upstream" --package nextcloud-client
+          # Craft writes <craft root>\tmp\nextcloud-client-<…>.exe
           New-Item -ItemType Directory -Force dist | Out-Null
-          Get-ChildItem -Path "${{ github.workspace }}" -Recurse -Include *.exe -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -match '(?i)orneos.*(setup|install|win|x64)' -and $_.FullName -notmatch '\\(build|image|work)\\' } |
-            ForEach-Object { Write-Host $_.FullName; Copy-Item $_.FullName dist\ }
-          if (!(Get-ChildItem dist)) { Write-Error "no installer found"; exit 1 }
+          $exe = Get-ChildItem "${{ github.workspace }}\${{ env.CRAFT_TARGET }}\tmp\*.exe" | Sort-Object LastWriteTime | Select-Object -Last 1
+          if (!$exe) { Write-Error "no installer found"; exit 1 }
+          $version = "${{ needs.upstream.outputs.desktop }}".TrimStart('v') + ".${{ needs.upstream.outputs.buildnr }}"
+          Copy-Item $exe.FullName "dist\Orneos-$version-x64-setup.exe"
+          Get-ChildItem dist
       - uses: actions/upload-artifact@v4
         with:
           name: windows
