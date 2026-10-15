@@ -151,7 +151,7 @@ jobs:
         run: |
           KDE=$(sed -n 's/^craft\/craft-blueprints-kde\.revision *= *//p' ../../../craftmaster.ini)
           swift run mac-crafter build --app-name Orneos --arch arm64 --build-type Release \
-            --kde-blueprints-git-ref "$KDE" --disable-autoupdater --package \
+            --kde-blueprints-git-ref "$KDE" --disable-auto-updater --package \
             --build-path "$RUNNER_TEMP/build" --product-path "$RUNNER_TEMP/product"
       - name: Collect
         run: |
