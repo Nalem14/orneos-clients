@@ -20,7 +20,7 @@ cp "$HERE"/desktop/theme/colored/* "$SRC/theme/colored/"
 replace() { # file, old, new
     if grep -qF "$3" "$1"; then return; fi
     grep -qF "$2" "$1" || { echo "upstream changed: '$2' not found in $1" >&2; exit 1; }
-    sed -i "s|$2|$3|g" "$1"
+    OLD="$2" NEW="$3" perl -pi -e 's/\Q$ENV{OLD}\E/$ENV{NEW}/g' "$1" # portable (GNU and BSD/macOS)
 }
 replace "$SRC/CMakeLists.txt" '{E314A650-DCA4-416E-974E-18EA37C213EA}' '{5E0A9C2B-6B1D-4C8E-9F3A-2D7B41E8C6A1}'
 replace "$SRC/CMakeLists.txt" '1E62D59A-6EA4-476C-B707-4A32E88ED822' '8C3F1E27-4A9B-4D6C-B2E5-7F1A0D9C3B42'
