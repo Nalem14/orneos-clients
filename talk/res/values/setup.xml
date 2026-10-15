@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Orneos Meet: branding for the Nextcloud Talk Android app (nextcloud/talk-android).
+  Copied into app/src/generic/res/values/ by scripts/apply-talk.sh; overrides main/res/values/setup.xml by name.
+  ⚠ Never change once published: applicationId (eu.orneos.talk), the database key, the Firebase app.
+-->
+<resources>
+    <!-- Local database encryption key of this app (random, ours) -->
+    <string name="nc_talk_database_encryption_key" translatable="false">hluJ07T3waYWxLwjPn5Vb8dYt4qVW8e27OYeuqUT</string>
+    <string name="nc_app_name">Orneos Meet</string> <!-- home screen label: "Meet" alone reads as Google Meet -->
+    <string name="nc_app_product_name">Orneos Meet</string>
+    <string name="nc_server_product_name">Orneos</string>
+    <bool name="is_branded_client">true</bool>
+
+    <!-- No server to choose: straight to the Orneos sign-in (Login Flow v2 on app.orneos.eu) -->
+    <string name="weblogin_url" translatable="false">https://app.orneos.eu</string>
+    <bool name="hide_provider">true</bool>
+    <!-- Reuse the account of the Orneos Files app (clients/android: eu.orneos.files, account type eu.orneos) -->
+    <string name="nc_import_accounts_from" translatable="false">eu.orneos.files</string>
+    <string name="nc_import_account_type" translatable="false">eu.orneos</string>
+
+    <!-- Notifications: Web Push from our Nextcloud (notifications app, webpush_enabled), delivered through our own
+         Firebase project (orneos, app eu.orneos.talk) by the embedded FCM distributor; end-to-end encrypted -->
+    <string name="google_app_id" translatable="false">1:387376154932:android:192052c10fd95bb49e3d61</string>
+    <string name="gcm_defaultSenderId" translatable="false">387376154932</string>
+    <string name="google_api_key" translatable="false">AIzaSyBTX6aIJNqSCeWhTW79sFwAtjP_LaR5-x4</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyBTX6aIJNqSCeWhTW79sFwAtjP_LaR5-x4</string>
+    <string name="project_id" translatable="false">orneos-bb6d6</string>
+    <string name="google_storage_bucket" translatable="false">orneos-bb6d6.firebasestorage.app</string>
+    <!-- Not used by our project: emptied so nothing points at Nextcloud's Firebase project -->
+    <string name="firebase_database_url" translatable="false"></string>
+    <string name="default_web_client_id" translatable="false"></string>
+
+    <string name="nc_report_email" translatable="false">contact@orneos.eu</string>
+    <string name="nc_privacy_url" translatable="false">https://orneos.eu/fr/mentions-legales</string>
+    <string name="nc_source_code_url" translatable="false">https://github.com/Nalem14/orneos-clients</string>
+    <string name="nc_talk_android_issues_url" translatable="false">https://orneos.eu/fr/aide</string>
+    <string name="nc_providers_url" translatable="false">https://orneos.eu</string>
+    <string name="osm_geocoder_contact" translatable="false">contact@orneos.eu</string>
+</resources>

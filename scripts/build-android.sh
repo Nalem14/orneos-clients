@@ -1,14 +1,18 @@
 #!/bin/bash
-# Builds the Orneos Android app (generic flavor) in a JDK 21 container; the Android SDK, NDK and Gradle caches
-# live in $CACHE so later builds are fast.
-# Usage: scripts/build-android.sh <android-checkout-with-overlay> [debug|release]
-# release: needs ORNEOS_KEYSTORE (path), ORNEOS_KEYSTORE_PASS and ORNEOS_KEY_ALIAS; output orneos-<versionCode>.apk
+# Builds an Orneos Android app (generic flavor): Orneos Files (nextcloud/android) or Orneos Meet (nextcloud/talk-android),
+# in a JDK 21 container; the Android SDK, NDK and Gradle caches live in $CACHE so later builds are fast.
+# Usage: scripts/build-android.sh <checkout-with-overlay> [debug|release]
+# release: needs ORNEOS_KEYSTORE (path), ORNEOS_KEYSTORE_PASS and ORNEOS_KEY_ALIAS;
+# output <ORNEOS_APK_NAME, default orneos>-<versionCode>.apk (the Files app's updater expects orneos-<versionCode>.apk)
 set -euo pipefail
 SRC="$(cd "${1:?path to the branded android checkout}" && pwd)"
 MODE="${2:-debug}"
 CACHE="${CACHE:-$HOME/.cache/orneos-android-build}"
 mkdir -p "$CACHE/sdk" "$CACHE/gradle"
-. "$SRC/ndk.env"
+NAME="${ORNEOS_APK_NAME:-orneos}"
+NDK_VERSION=""; CMAKE_VERSION=""
+[ -f "$SRC/ndk.env" ] && . "$SRC/ndk.env" # only the Files app has native code
+NATIVE=$( [ -n "$NDK_VERSION" ] && echo "'ndk;$NDK_VERSION' 'cmake;$CMAKE_VERSION'" || true)
 TASK=$([ "$MODE" = release ] && echo assembleGenericRelease || echo assembleGenericDebug)
 
 docker run --rm -v "$SRC":/src -v "$CACHE/sdk":/sdk -v "$CACHE/gradle":/root/.gradle -w /src \
@@ -19,7 +23,7 @@ docker run --rm -v "$SRC":/src -v "$CACHE/sdk":/sdk -v "$CACHE/gradle":/root/.gr
         unzip -q /tmp/tools.zip -d /sdk/cmdline-tools && mv /sdk/cmdline-tools/cmdline-tools /sdk/cmdline-tools/latest
     fi
     yes | /sdk/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null || true
-    /sdk/cmdline-tools/latest/bin/sdkmanager --install 'ndk;$NDK_VERSION' 'cmake;$CMAKE_VERSION' >/dev/null
+    [ -z \"$NATIVE\" ] || /sdk/cmdline-tools/latest/bin/sdkmanager --install $NATIVE >/dev/null
     ./gradlew --no-daemon -q $TASK; status=\$?
     chown -R $(id -u):$(id -g) /src /sdk /root/.gradle; exit \$status"
 
@@ -30,8 +34,8 @@ if [ "$MODE" = release ]; then
         "/sdk/build-tools/\$(ls /sdk/build-tools | sort -V | tail -1)/aapt2 dump badging /out/$(basename "$APK")" | grep -oP "versionCode='\K\d+")
     docker run --rm -v "$CACHE/sdk":/sdk -v "$OUT":/out -v "$(dirname "$ORNEOS_KEYSTORE")":/ks -e PASS="$ORNEOS_KEYSTORE_PASS" eclipse-temurin:21-jdk bash -c \
         "/sdk/build-tools/\$(ls /sdk/build-tools | sort -V | tail -1)/apksigner sign --ks /ks/$(basename "$ORNEOS_KEYSTORE") --ks-key-alias '$ORNEOS_KEY_ALIAS' \
-         --ks-pass env:PASS --v4-signing-enabled false --out /out/orneos-$CODE.apk /out/$(basename "$APK") \
-         && chown $(id -u):$(id -g) /out/orneos-$CODE.apk"
+         --ks-pass env:PASS --v4-signing-enabled false --out /out/$NAME-$CODE.apk /out/$(basename "$APK") \
+         && chown $(id -u):$(id -g) /out/$NAME-$CODE.apk"
     echo "$CODE" > "$OUT/latest"
 fi
 ls -la "$OUT"

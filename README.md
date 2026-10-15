@@ -1,6 +1,6 @@
 # Clients Orneos
 
-Applications Orneos de bureau (Windows, macOS, Linux) et Android. Ce sont les clients officiels de Nextcloud, **sans fork** : ce dossier ne contient que notre **surcouche** (marque, réglages, icônes) et les scripts qui l'appliquent sur une version officielle précise.
+Applications Orneos de bureau (Windows, macOS, Linux) et Android (Orneos pour les fichiers, Orneos Meet pour Talk). Ce sont les clients officiels de Nextcloud, **sans fork** : ce dossier ne contient que notre **surcouche** (marque, réglages, icônes) et les scripts qui l'appliquent sur une version officielle précise.
 
 ```
 versions.env            tags officiels suivis (DESKTOP_TAG, ANDROID_TAG)
@@ -8,6 +8,7 @@ brand/                  logo source (mark-1024.svg) ; scripts/make-icons.sh en t
 desktop/branding.cmake  nom, serveur imposé, flux de mise à jour, GUID Windows
 desktop/theme/          icônes et logos qui remplacent ceux de Nextcloud
 android/res/            setup.xml (réglages), logos vectoriels, icônes du lanceur
+talk/res/               Orneos Meet (nextcloud/talk-android) : setup.xml (serveur, compte partagé, Firebase), icônes
 scripts/                apply-*.sh, build-*.sh, check-upstream.sh, make-icons.sh
 .github/workflows/      build quotidien (actif quand ce dossier sera son propre dépôt GitHub)
 ```
@@ -31,6 +32,12 @@ Aucun choix de serveur :
 
 Dans les deux cas, c'est le Login Flow v2 : le navigateur s'ouvre sur la connexion Orneos (login.orneos.eu, double authentification, plusieurs comptes), puis l'app reçoit un mot de passe d'application révocable.
 
+## Orneos Meet (Talk Android)
+
+Même principe que l'app Fichiers (`scripts/apply-talk.sh`, saveur `generic`, paquet `eu.orneos.talk`, signé sur le serveur avec la même clé). Il reprend le compte de l'app Orneos (`nc_import_accounts_from` = `eu.orneos.files`, type `eu.orneos`).
+
+**Notifications** : le cloud les envoie lui-même en **Web Push** (app `notifications`, `webpush_enabled`), sans le service de Nextcloud GmbH. Sur le téléphone, le distributeur FCM intégré de la saveur `generic` les reçoit, via **notre projet Firebase** (`orneos-bb6d6`, app `eu.orneos.talk`, valeurs dans `talk/res/values/setup.xml`). Le contenu est chiffré de bout en bout (RFC 8291) : Google ne voit passer que des paquets opaques. La clé d'API est restreinte au paquet et à l'empreinte de notre clé de signature.
+
 ## Mises à jour des utilisateurs
 
 | | Canal | Côté serveur |
@@ -38,7 +45,7 @@ Dans les deux cas, c'est le Login Flow v2 : le navigateur s'ouvre sur la connexi
 | Windows | l'updater intégré télécharge l'installeur (`.exe` NSIS) et l'installe en silence (`/S`) | `/updates/desktop` (`ClientUpdateController`) lit `private/clients/desktop.json` |
 | macOS | Sparkle (dans /Applications) : télécharge le DMG et remplace l'app ; signature Ed25519 vérifiée avec `desktop/sparkle-ed25519.pub` (clé privée sur le serveur, `private/clients/sparkle-ed25519.key`, signature automatique à la publication) | même flux, en appcast |
 | Linux | notification, lien vers la page Appareils | même flux |
-| Android | l'app lit `downloads/android/latest`, propose `orneos-<versionCode>.apk` | fichiers statiques |
+| Android | l'app Fichiers lit `downloads/android/latest` et propose `orneos-<versionCode>.apk` ; les deux apps sont aussi dans **notre dépôt F-Droid** (`https://orneos.eu/downloads/fdroid/repo`, `tools/client-fdroid.sh`), qui les met à jour automatiquement | fichiers statiques |
 
 Numéro de version : `35.0.0.<AAJJJHH>` (année, jour, heure UTC du build), le même sur le serveur et en CI ; c'est lui que l'updater compare.
 
@@ -60,7 +67,6 @@ La page Appareils devra expliquer ces étapes quand les apps y seront proposées
 ## Reste à faire
 
 - **Windows et macOS** : les jobs CI (KDE Craft, mac-crafter) sont à valider au premier passage.
-- **Talk Android** (`nextcloud/talk-android`) : même principe, même `account_type`. Notifications push à prévoir (proxy et Firebase à nous, ou UnifiedPush).
 - **Textes** : quelques traductions officielles disent encore « Nextcloud » en dur ; à reprendre par surcharge de `strings.xml` si elles se voient.
 - **iOS** : pas d'app Orneos. Les utilisateurs prennent l'app officielle Nextcloud et se connectent par le code QR de la page Appareils.
 

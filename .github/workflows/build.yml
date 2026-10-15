@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['versions.env', 'desktop/**', 'android/**', 'scripts/**', '.github/workflows/**']
+    paths: ['versions.env', 'desktop/**', 'android/**', 'talk/**', 'scripts/**', '.github/workflows/**']
 
 permissions:
   contents: write
@@ -24,6 +24,7 @@ jobs:
     outputs:
       desktop: ${{ steps.v.outputs.desktop }}
       android: ${{ steps.v.outputs.android }}
+      talk: ${{ steps.v.outputs.talk }}
       changed: ${{ steps.bump.outputs.changed }}
       buildnr: ${{ steps.v.outputs.buildnr }}
     steps:
@@ -43,7 +44,7 @@ jobs:
         # Build number: UTC year, day, hour (same scheme as tools/client-build.sh on the server), compared by the updater
         run: |
           . ./versions.env
-          { echo "desktop=$DESKTOP_TAG"; echo "android=$ANDROID_TAG"; echo "buildnr=$(date -u +%y%j%H)"; } >> "$GITHUB_OUTPUT"
+          { echo "desktop=$DESKTOP_TAG"; echo "android=$ANDROID_TAG"; echo "talk=$TALK_TAG"; echo "buildnr=$(date -u +%y%j%H)"; } >> "$GITHUB_OUTPUT"
 
   # The scheduled run only builds when a new official release came out
   android:
@@ -54,6 +55,17 @@ jobs:
       - uses: actions/checkout@v4
       - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.android }} https://github.com/nextcloud/android.git upstream
       - run: scripts/apply-android.sh upstream
+      - run: scripts/build-android.sh upstream debug
+
+  # Orneos Meet (nextcloud/talk-android): compile check; the signed APK is built on the server like Android's
+  talk:
+    needs: upstream
+    if: github.event_name != 'schedule' || needs.upstream.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.talk }} https://github.com/nextcloud/talk-android.git upstream
+      - run: scripts/apply-talk.sh upstream
       - run: scripts/build-android.sh upstream debug
 
   linux:
