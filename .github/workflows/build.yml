@@ -209,6 +209,9 @@ jobs:
           - { os: windows-latest, build: 'build:windows:x64', package: 'package:windows:x64:exe', label: windows-x64 }
           - { os: macos-15, build: 'build:mac', package: 'package:mac', label: macos-universal }
     runs-on: ${{ matrix.os }}
+    # talk-desktop defaults CHANNEL to "dev" (title bar "… Dev"); published builds must be stable
+    env:
+      CHANNEL: stable
     defaults:
       run: { shell: bash }
     steps:

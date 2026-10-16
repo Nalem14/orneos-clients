@@ -32,6 +32,16 @@ for old, new in REPLACEMENTS:
         sys.exit(f"upstream recipe changed: {old!r} not found in {path}")
     src = src.replace(old, new)
 
+# Craft NSIS only creates a Start Menu shortcut when defines["executable"] is set.
+# Upstream sets applicationExecutable, which Craft ignores — so the stock installer ships
+# files but no .lnk (and no post-install launch). Point at our renamed binary.
+EXE_LINE = 'self.defines["executable"] = "bin/orneos.exe"'
+if EXE_LINE not in src:
+    anchor = 'self.applicationExecutable = "orneos"'
+    if anchor not in src:
+        sys.exit(f"upstream recipe changed: cannot attach {EXE_LINE}")
+    src = src.replace(anchor, anchor + "\n        " + EXE_LINE)
+
 # Installer icon (Craft's own by default)
 ICON_ANCHOR = 'self.applicationExecutable = "orneos"'
 icon_line = f'self.defines["icon"] = r"{icon}"'
