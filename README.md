@@ -36,7 +36,7 @@ Dans les deux cas, c'est le Login Flow v2 : le navigateur s'ouvre sur la connexi
 
 Même principe que l'app Fichiers (`scripts/apply-talk.sh`, saveur `generic`, paquet `eu.orneos.talk`, signé sur le serveur avec la même clé). Il reprend le compte de l'app Orneos (`nc_import_accounts_from` = `eu.orneos.files`, type `eu.orneos`).
 
-**Notifications** : le cloud les envoie lui-même en **Web Push** (app `notifications`, `webpush_enabled`), sans le service de Nextcloud GmbH. Sur le téléphone, le distributeur FCM intégré de la saveur `generic` les reçoit, via **notre projet Firebase** (`orneos-bb6d6`, app `eu.orneos.talk`, valeurs dans `talk/res/values/setup.xml`). Le contenu est chiffré de bout en bout (RFC 8291) : Google ne voit passer que des paquets opaques. La clé d'API est restreinte au paquet et à l'empreinte de notre clé de signature.
+**Notifications** : le cloud les envoie lui-même en **Web Push** (app `notifications`, `webpush_enabled`), sans le service de Nextcloud GmbH. Sur le téléphone, le distributeur FCM intégré de la saveur `generic` les reçoit, via **notre projet Firebase** (`orneos-bb6d6`, app `eu.orneos.talk`). Le contenu est chiffré de bout en bout (RFC 8291) : Google ne voit passer que des paquets opaques. La clé d'API n'est pas dans ce dépôt : `apply-talk.sh` l'écrit au build depuis `google-services.json` (`ORNEOS_GOOGLE_SERVICES`, sur le serveur `private/clients/google-services.json`). Elle doit rester restreinte au paquet `eu.orneos.talk` et à l'empreinte de la clé de signature.
 
 ## Orneos Meet pour ordinateur (Talk Desktop)
 

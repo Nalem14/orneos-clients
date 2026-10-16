@@ -13,6 +13,24 @@ GRADLE=$(ls "$SRC"/app/build.gradle* 2>/dev/null | head -1)
 mkdir -p "$SRC/app/src/generic/res"
 cp -r "$HERE"/talk/res/* "$SRC/app/src/generic/res/"
 
+# The Google API key stays out of this public repo. The server passes google-services.json
+# (ORNEOS_GOOGLE_SERVICES); CI leaves the BUILD_INJECTED placeholder, which is enough to compile.
+SETUP="$SRC/app/src/generic/res/values/setup.xml"
+if [ -n "${ORNEOS_GOOGLE_SERVICES:-}" ]; then
+    [ -f "$ORNEOS_GOOGLE_SERVICES" ] || { echo "missing $ORNEOS_GOOGLE_SERVICES" >&2; exit 1; }
+    python3 - "$ORNEOS_GOOGLE_SERVICES" "$SETUP" <<'PY'
+import json, sys
+src, dest = sys.argv[1:]
+key = json.load(open(src))["client"][0]["api_key"][0]["current_key"]
+if not key.startswith("AIza") or len(key) < 30:
+    sys.exit("google-services.json has no API key")
+text = open(dest).read()
+if text.count("BUILD_INJECTED") != 2:
+    sys.exit("setup.xml is missing the two Firebase key placeholders")
+open(dest, "w").write(text.replace("BUILD_INJECTED", key))
+PY
+fi
+
 # 2. Package id of the generic flavor: eu.orneos.talk (⚠ never change once published; registered in Firebase)
 python3 - "$GRADLE" <<'PY'
 import re, sys

@@ -7,6 +7,10 @@
 set -euo pipefail
 SRC="$(cd "${1:?path to the branded android checkout}" && pwd)"
 MODE="${2:-debug}"
+if [ "$MODE" = release ] && grep -q BUILD_INJECTED "$SRC/app/src/generic/res/values/setup.xml" 2>/dev/null; then
+    echo "release build still has the Firebase key placeholder: pass ORNEOS_GOOGLE_SERVICES to apply-talk.sh" >&2
+    exit 1
+fi
 CACHE="${CACHE:-$HOME/.cache/orneos-android-build}"
 mkdir -p "$CACHE/sdk" "$CACHE/gradle"
 NAME="${ORNEOS_APK_NAME:-orneos}"

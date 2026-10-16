@@ -20,11 +20,13 @@
     <string name="nc_import_account_type" translatable="false">eu.orneos</string>
 
     <!-- Notifications: Web Push from our Nextcloud (notifications app, webpush_enabled), delivered through our own
-         Firebase project (orneos, app eu.orneos.talk) by the embedded FCM distributor; end-to-end encrypted -->
+         Firebase project (orneos-bb6d6, app eu.orneos.talk) by the embedded FCM distributor; end-to-end encrypted.
+         The API key is not stored here: apply-talk.sh writes it at build time from google-services.json
+         (on the server: private/clients/google-services.json). CI compiles with the placeholder. -->
     <string name="google_app_id" translatable="false">1:387376154932:android:192052c10fd95bb49e3d61</string>
     <string name="gcm_defaultSenderId" translatable="false">387376154932</string>
-    <string name="google_api_key" translatable="false">AIzaSyBTX6aIJNqSCeWhTW79sFwAtjP_LaR5-x4</string>
-    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyBTX6aIJNqSCeWhTW79sFwAtjP_LaR5-x4</string>
+    <string name="google_api_key" translatable="false">BUILD_INJECTED</string>
+    <string name="google_crash_reporting_api_key" translatable="false">BUILD_INJECTED</string>
     <string name="project_id" translatable="false">orneos-bb6d6</string>
     <string name="google_storage_bucket" translatable="false">orneos-bb6d6.firebasestorage.app</string>
     <!-- Not used by our project: emptied so nothing points at Nextcloud's Firebase project -->
