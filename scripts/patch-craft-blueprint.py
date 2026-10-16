@@ -42,6 +42,17 @@ if EXE_LINE not in src:
         sys.exit(f"upstream recipe changed: cannot attach {EXE_LINE}")
     src = src.replace(anchor, anchor + "\n        " + EXE_LINE)
 
+# Finish-page "Launch Orneos" checkbox (checked by default). Craft's stock .nsi never sets
+# MUI_FINISHPAGE_RUN. Injected via nsis_include (before MUI pages). Skipped on silent /S updates.
+RUN_LINE = (
+    'self.defines["nsis_include"] = '
+    '\'!define MUI_FINISHPAGE_RUN "$INSTDIR/bin/orneos.exe"\''
+)
+if RUN_LINE not in src:
+    if EXE_LINE not in src:
+        sys.exit("upstream recipe changed: cannot attach MUI_FINISHPAGE_RUN")
+    src = src.replace(EXE_LINE, EXE_LINE + "\n        " + RUN_LINE)
+
 # Installer icon (Craft's own by default)
 ICON_ANCHOR = 'self.applicationExecutable = "orneos"'
 icon_line = f'self.defines["icon"] = r"{icon}"'
