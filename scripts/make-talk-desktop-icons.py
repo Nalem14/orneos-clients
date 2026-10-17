@@ -9,15 +9,16 @@ os.makedirs(os.path.join(ROOT, 'icons'), exist_ok=True)
 BLUE, SAFFRON, WHITE, BLACK = '#002FA7', '#F0A202', '#FFFFFF', '#000000'
 
 def glyph(frame, lens, width=1.8):
-    return (f'<rect x="3" y="6" width="12" height="12" fill="none" stroke="{frame}" stroke-width="{width}"/>'
-            f'<path d="M15 10l6-3v10l-6-3z" fill="none" stroke="{lens}" stroke-width="{width}" stroke-linejoin="round"/>')
+    return (f'<path d="M3 5h12v11H8l-3.5 3v-3H3z" fill="none" stroke="{frame}" stroke-width="{width}" stroke-linejoin="round"/>'
+            f'<path d="M6 9.2h6M6 12.2h4" fill="none" stroke="{frame}" stroke-width="{width}" stroke-linecap="round"/>'
+            f'<path d="M15 9l6-3v9l-6-3z" fill="none" stroke="{lens}" stroke-width="{width}" stroke-linejoin="round"/>')
 
 def svg(name, body, view='0 0 24 24'):
     with open(os.path.join(ROOT, name), 'w') as f:
         f.write(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view}">{body}</svg>\n')
 
 def tile(rx, pad=0.0, scale=0.75):
-    """Blue tile with the camera; pad = transparent margin around the tile (fraction of 24)."""
+    """Blue tile with the Meet glyph; pad = transparent margin around the tile (fraction of 24)."""
     s = 24 - 2 * pad * 24
     o = pad * 24
     inner = f'<g transform="translate({o + (s - s * scale) / 2} {o + (s - s * scale) / 2}) scale({s * scale / 24})">{glyph(WHITE, SAFFRON)}</g>'
@@ -37,10 +38,10 @@ svg('talk-icon-plain-spaced-dark.svg', f'<g transform="translate(2.4 2.4) scale(
 # Logos shown on the brand background (white)
 svg('talk-logo.svg', glyph(WHITE, WHITE, 1.6), view='0 2 24 20')
 svg('talk-logo-spaced.svg', f'<g transform="translate(3 3) scale(.75)">{glyph(WHITE, WHITE, 1.6)}</g>')
-# Server logo: the Orneos mark, white
-svg('server-logo-plain.svg', '<path d="M8 22c4-7 8-10 10-10s6 3 10 10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="square"/>'
-    '<path d="M13 22c2-3.2 3.6-4.5 5-4.5s3 1.3 5 4.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="square"/>'
-    '<path d="M7 27h22" stroke="#fff" stroke-width="2"/>', view='-18 9 72 36')
+# Server logo: the Orneos 3C Prism mark, white
+svg('server-logo-plain.svg', '<path d="M21.4 3.2C11.2 2 2.8 9.8 2.8 19.4c0 2.4.6 4.6 1.6 6.6L11 19.4c-.8-5 2.8-9.6 7.8-10l2.6-6.2z" fill="#fff" stroke="none"/>'
+    '<path d="M32.8 16.2c.8 9.4-6.6 17-16 17-4 0-7.7-1.5-10.4-4.2l6.6-6.6c3.8 3.4 9.8 2.6 12.6-2.2l7.2-4z" fill="#fff" fill-opacity=".8" stroke="none"/>'
+    '<path d="M24.4 4.2c4.4 2 7.4 5.8 8.2 9.4l-6.8 3.8c-.8-3.4-3-6-6-7.2l4.6-6z" fill="#fff" stroke="none"/>', view='-18 0 72 36')
 
 def raster(svgfile, size, out, extra=()):
     subprocess.run(['convert', '-background', 'none', '-density', str(max(72, size * 6)), os.path.join(ROOT, svgfile),
