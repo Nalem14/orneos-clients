@@ -30,4 +30,31 @@ for f in drawable/logo.xml drawable/ic_launcher_foreground.xml drawable/nextclou
     [ -f "$SRC/app/src/generic/res/$f" ] || { echo "missing replacement for $f" >&2; exit 1; }
 done
 
+# 4. Same official tag, new overlay: versionBuild is the stable increment (90–99) added into
+#    versionCode. Upstream ships 90; ANDROID_REVISION in versions.env takes the next slot.
+#    versionName stays 35.0.x. Idempotent. 0 leaves the official number untouched.
+REV=$(sed -n 's/^ANDROID_REVISION=//p' "$HERE/versions.env")
+python3 - "$GRADLE" "${REV:-0}" <<'PY'
+import re, sys
+p, rev = sys.argv[1], int(sys.argv[2])
+if rev == 0:
+    sys.exit(0)
+s = open(p).read()
+m = re.search(r'val versionBuild = (\d+)', s)
+if not m:
+    sys.exit('upstream changed: versionBuild not found in ' + p)
+current = int(m.group(1))
+if not 90 <= current <= 99:
+    sys.exit(f'upstream versionBuild {current} is not a stable build')
+target = 90 + rev
+if not 90 <= target <= 99:
+    sys.exit(f'ANDROID_REVISION {rev} leaves the stable band 90-99')
+if target < current:
+    sys.exit(f'ANDROID_REVISION {rev} would downgrade versionBuild {current} to {target}')
+if target != current:
+    s = s.replace(f'val versionBuild = {current}', f'val versionBuild = {target}', 1)
+    open(p, 'w').write(s)
+    print(f'versionBuild {current} -> {target}')
+PY
+
 echo "android overlay applied on $(git -C "$SRC" describe --tags 2>/dev/null || echo "$SRC")"

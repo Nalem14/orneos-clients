@@ -48,4 +48,32 @@ for f in drawable/ic_logo.xml drawable/ic_launcher_foreground.xml drawable/ic_no
     [ -f "$SRC/app/src/generic/res/$f" ] || { echo "missing replacement for $f" >&2; exit 1; }
 done
 
+# 4. Same official tag, new overlay: the last two digits of versionCode are the stable increment
+#    (90–99). Upstream ships 90; TALK_REVISION in versions.env takes the next slot, or F-Droid
+#    treats the APK as the build already installed. Idempotent.
+REV=$(sed -n 's/^TALK_REVISION=//p' "$HERE/versions.env")
+python3 - "$GRADLE" "${REV:-0}" <<'PY'
+import re, sys
+p, rev = sys.argv[1], int(sys.argv[2])
+s = open(p).read()
+m = re.search(r'versionCode = (\d+)', s)
+if not m:
+    sys.exit('upstream changed: versionCode not found in ' + p)
+code = int(m.group(1))
+slot = code % 100
+if not 90 <= slot <= 99:
+    sys.exit(f'upstream versionCode {code} is not a stable build')
+if rev == 0:
+    sys.exit(0)
+target = (code // 100) * 100 + 90 + rev
+if not 90 <= (target % 100) <= 99:
+    sys.exit(f'TALK_REVISION {rev} leaves the stable band 90-99')
+if target < code:
+    sys.exit(f'TALK_REVISION {rev} would downgrade versionCode {code} to {target}')
+if target != code:
+    s = s.replace(f'versionCode = {code}', f'versionCode = {target}', 1)
+    open(p, 'w').write(s)
+    print(f'versionCode {code} -> {target}')
+PY
+
 echo "talk overlay applied on $(git -C "$SRC" describe --tags 2>/dev/null || echo "$SRC")"

@@ -51,7 +51,9 @@ Même principe que l'app Fichiers (`scripts/apply-talk.sh`, saveur `generic`, pa
 | Linux | notification, lien vers la page Appareils | même flux |
 | Android | l'app Fichiers lit `downloads/android/latest` et propose `orneos-<versionCode>.apk` ; les deux apps sont aussi dans **notre dépôt F-Droid** (`https://orneos.eu/downloads/fdroid/repo`, `tools/client-fdroid.sh`), qui les met à jour automatiquement | fichiers statiques |
 
-Numéro de version : `35.0.0.<AAJJJHH>` (année, jour, heure UTC du build), le même sur le serveur et en CI ; c'est lui que l'updater compare.
+Numéro de version bureau : `35.0.0.<AAJJJHH>` (année, jour, heure UTC du build), le même sur le serveur et en CI ; c'est lui que l'updater compare.
+
+Android : le versionCode officiel se termine par l'incrément stable (`90` pour une release, jusqu'à `99`). `ANDROID_REVISION` et `TALK_REVISION` dans `versions.env` s'ajoutent quand la surcouche change sans nouveau tag (`1` → `91`) ; `check-upstream.sh` les remet à `0` quand le tag change. Sans ça, F-Droid et l'appli gardent l'APK déjà installé. Le nom affiché (`35.0.1`, `25.0.2`) ne change pas.
 
 ## Pas de signature des éditeurs
 

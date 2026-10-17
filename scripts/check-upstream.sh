@@ -18,6 +18,9 @@ changed=0
 [ "$NEW_TALK_DESKTOP" != "$TALK_DESKTOP_TAG" ] && { echo "talk-desktop: $TALK_DESKTOP_TAG -> $NEW_TALK_DESKTOP"; changed=1; }
 if [ "$changed" = 1 ] && [ "${1:-}" = "--write" ]; then
     sed -i "s/^DESKTOP_TAG=.*/DESKTOP_TAG=$NEW_DESKTOP/; s/^ANDROID_TAG=.*/ANDROID_TAG=$NEW_ANDROID/; s/^TALK_TAG=.*/TALK_TAG=$NEW_TALK/; s/^TALK_DESKTOP_TAG=.*/TALK_DESKTOP_TAG=$NEW_TALK_DESKTOP/" versions.env
+    # A new official tag brings its own versionCode; the overlay increment starts over
+    [ "$NEW_ANDROID" != "$ANDROID_TAG" ] && sed -i 's/^ANDROID_REVISION=.*/ANDROID_REVISION=0/' versions.env
+    [ "$NEW_TALK" != "$TALK_TAG" ] && sed -i 's/^TALK_REVISION=.*/TALK_REVISION=0/' versions.env
 fi
 [ "$changed" = 0 ] && echo "up to date (desktop $DESKTOP_TAG, android $ANDROID_TAG, talk $TALK_TAG, talk-desktop $TALK_DESKTOP_TAG)"
 exit 0
