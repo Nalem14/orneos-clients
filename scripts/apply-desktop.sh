@@ -48,4 +48,10 @@ if grep -q 'nextcloud-client.buildTests = True' "$SRC/craftmaster.ini" 2>/dev/nu
     replace "$SRC/craftmaster.ini" 'nextcloud-client.buildTests = True' 'nextcloud-client.buildTests = False'
 fi
 
+# 8. Assistant → Ornis in the tray button, assistant window and translations
+if [ -d "$SRC/src/gui" ]; then
+    find "$SRC/src/gui" "$SRC/translations" -type f \( -name '*.qml' -o -name '*.cpp' -o -name '*.h' -o -name '*.ts' \) \
+        -exec perl -pi -e 's/Nextcloud Assistant/Ornis/g; s/qsTr\("Assistant"\)/qsTr("Ornis")/g; s/>Assistant</>Ornis</g' {} +
+fi
+
 echo "desktop overlay applied on $(git -C "$SRC" describe --tags 2>/dev/null || echo "$SRC")"
