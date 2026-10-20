@@ -9,7 +9,10 @@ C=desktop/theme/colored
 for n in wizard_logo wizard-nextcloud; do
     cp "$SRC" "$C/$n.svg"; png "$SRC" 64 "$C/$n.png"; png "$SRC" 128 "$C/$n@2x.png"
 done
+cp "$SRC" "$C/Orneos-icon.svg"
 png "$SRC" 150 "$C/Orneos-w10starttile.png"
+# Start menu tile: white mark on transparent, the tile colour comes from orneos.VisualElementsManifest.xml
+sed -e 's#<rect[^>]*/>##' -e 's#width="1024" height="1024"#width="150" height="150"#' "$SRC" > "$C/Orneos-w10startmenu.svg"
 convert -background none -density 72 "$SRC" -strip -define icon:auto-resize=256,128,64,48,32,24,16 desktop/Orneos-installer.ico
 
 # Android launcher fallbacks (the adaptive icon itself is a vector, res/drawable/ic_launcher_*.xml)
