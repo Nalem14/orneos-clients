@@ -30,7 +30,34 @@ for f in drawable/logo.xml drawable/ic_launcher_foreground.xml drawable/nextclou
     [ -f "$SRC/app/src/generic/res/$f" ] || { echo "missing replacement for $f" >&2; exit 1; }
 done
 
-# 4. Same official tag, new overlay: versionBuild is the stable increment (90–99) added into
+# 4. Phone photos go into the library: camera folders upload to /Photos/<folder> (instant_upload_path,
+#    translated in many languages upstream, so overridden in each) and other auto-upload folders to /Photos,
+#    the folder the cloud's Photos and Orneos Photos show by default. Only new folders: those already set up
+#    on a phone keep their path.
+python3 - "$SRC/app/src" <<'PY'
+import os, re, sys
+src = sys.argv[1]
+main = os.path.join(src, "main", "res")
+found = 0
+for folder in sorted(os.listdir(main)):
+    path = os.path.join(main, folder, "strings.xml")
+    if not folder.startswith("values") or not os.path.isfile(path):
+        continue
+    if not re.search(r'<string name="instant_upload_path"', open(path, encoding="utf-8").read()):
+        continue
+    found += 1
+    out = os.path.join(src, "generic", "res", folder)
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "orneos_photos.xml"), "w", encoding="utf-8") as f:
+        f.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
+                '    <string name="instant_upload_path" translatable="false">/Photos</string>\n'
+                '    <string name="auto_upload_path" translatable="false">/Photos</string>\n</resources>\n')
+if not found:
+    sys.exit("upstream changed: instant_upload_path not found in " + main)
+print(f"photos upload path set in {found} languages")
+PY
+
+# 5. Same official tag, new overlay: versionBuild is the stable increment (90–99) added into
 #    versionCode. Upstream ships 90; ANDROID_REVISION in versions.env takes the next slot.
 #    versionName stays 35.0.x. Idempotent. 0 leaves the official number untouched.
 REV=$(sed -n 's/^ANDROID_REVISION=//p' "$HERE/versions.env")
