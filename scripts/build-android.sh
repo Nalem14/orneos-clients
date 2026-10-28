@@ -19,8 +19,11 @@ NDK_VERSION=""; CMAKE_VERSION=""
 NATIVE=$( [ -n "$NDK_VERSION" ] && echo "'ndk;$NDK_VERSION' 'cmake;$CMAKE_VERSION'" || true)
 TASK=$([ "$MODE" = release ] && echo assembleGenericRelease || echo assembleGenericDebug)
 
+# Gradle may drop transform dirs while chown walks the cache; with bash -e that
+# would discard a successful build status. Keep the gradle exit code either way.
 docker run --rm -v "$SRC":/src -v "$CACHE/sdk":/sdk -v "$CACHE/gradle":/root/.gradle -w /src \
-    -e ANDROID_HOME=/sdk -e ANDROID_SDK_ROOT=/sdk eclipse-temurin:21-jdk bash -ec "
+    -e ANDROID_HOME=/sdk -e ANDROID_SDK_ROOT=/sdk -e DEBIAN_FRONTEND=noninteractive \
+    eclipse-temurin:21-jdk bash -ec "
     apt-get -qq update >/dev/null && apt-get -qq install -y unzip curl >/dev/null
     if [ ! -x /sdk/cmdline-tools/latest/bin/sdkmanager ]; then
         curl -sSL -o /tmp/tools.zip https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
@@ -29,7 +32,8 @@ docker run --rm -v "$SRC":/src -v "$CACHE/sdk":/sdk -v "$CACHE/gradle":/root/.gr
     yes | /sdk/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null || true
     [ -z \"$NATIVE\" ] || /sdk/cmdline-tools/latest/bin/sdkmanager --install $NATIVE >/dev/null
     ./gradlew --no-daemon -q $TASK; status=\$?
-    chown -R $(id -u):$(id -g) /src /sdk /root/.gradle; exit \$status"
+    chown -R $(id -u):$(id -g) /src /sdk /root/.gradle 2>/dev/null || true
+    exit \$status"
 
 OUT="$SRC/app/build/outputs/apk/generic/$MODE"
 if [ "$MODE" = release ]; then
