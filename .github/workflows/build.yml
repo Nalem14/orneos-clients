@@ -163,19 +163,29 @@ jobs:
 
   # admin/osx/mac-crafter: Craft + app bundle, then a DMG. No Apple signature (ad hoc only). Sparkle updates,
   # verified with our EdDSA key (desktop/sparkle-ed25519.pub; the server signs each published DMG).
+  # One DMG per processor: the client sends its buildArch to the update feed, which answers with the matching one.
   macos:
     needs: upstream
     if: github.event_name != 'schedule' || needs.upstream.outputs.changed == 'true'
-    runs-on: macos-26 # Xcode 26 SDK required (NSGlassEffectView), like upstream CI
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-26, arch: arm64 }          # Apple Silicon
+          - { os: macos-15-intel, arch: x86_64 }   # Intel Macs (last Intel runner, kept by GitHub until 08/2027)
+    runs-on: ${{ matrix.os }}
     steps:
+      # Xcode 26 SDK required (NSGlassEffectView), like upstream CI; the Intel image has it beside older ones
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with: { xcode-version: latest-stable }
       - uses: actions/checkout@v4
       - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.desktop }} https://github.com/nextcloud/desktop.git upstream
       - run: ORNEOS_BUILDNR=${{ needs.upstream.outputs.buildnr }} scripts/apply-desktop.sh upstream
-      - name: Build (arm64, unsigned)
+      - name: Build (${{ matrix.arch }}, unsigned)
         working-directory: upstream/admin/osx/mac-crafter
         run: |
           KDE=$(sed -n 's/^craft\/craft-blueprints-kde\.revision *= *//p' ../../../craftmaster.ini)
-          swift run mac-crafter build --app-name Orneos --arch arm64 --build-type Release \
+          swift run mac-crafter build --app-name Orneos --arch ${{ matrix.arch }} --build-type Release \
             --kde-blueprints-git-ref "$KDE" \
             --build-path "$RUNNER_TEMP/build" --product-path "$RUNNER_TEMP/product"
       - name: DMG (drag Orneos.app to Applications)
@@ -190,11 +200,11 @@ jobs:
           VERSION="${{ needs.upstream.outputs.desktop }}"; VERSION="${VERSION#v}.${{ needs.upstream.outputs.buildnr }}"
           mkdir -p "$RUNNER_TEMP/dmg" dist
           cp -R "$APP" "$RUNNER_TEMP/dmg/" && ln -s /Applications "$RUNNER_TEMP/dmg/Applications"
-          hdiutil create -volname Orneos -srcfolder "$RUNNER_TEMP/dmg" -ov -format UDZO "dist/Orneos-$VERSION-macos-arm64.dmg"
+          hdiutil create -volname Orneos -srcfolder "$RUNNER_TEMP/dmg" -ov -format UDZO "dist/Orneos-$VERSION-macos-${{ matrix.arch }}.dmg"
           ls -la dist
       - uses: actions/upload-artifact@v4
         with:
-          name: macos
+          name: macos-${{ matrix.arch }}
           path: dist/*
 
   # Orneos Meet for desktop (nextcloud/talk-desktop, Electron): official branding hook, unsigned like the sync client
