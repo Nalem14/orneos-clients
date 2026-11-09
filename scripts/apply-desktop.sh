@@ -27,8 +27,9 @@ replace "$SRC/CMakeLists.txt" '{E314A650-DCA4-416E-974E-18EA37C213EA}' '{5E0A9C2
 replace "$SRC/CMakeLists.txt" '1E62D59A-6EA4-476C-B707-4A32E88ED822' '8C3F1E27-4A9B-4D6C-B2E5-7F1A0D9C3B42'
 replace "$SRC/CMakeLists.txt" '6FF9B5B6-389F-444A-9FDD-A286C36EA079' 'B7D24A93-1E5F-4C08-A6B9-3E8F2C1D7A53'
 
-# 4. Linux AppImage: the packaging script hard-codes the icon name
-if [ -f "$SRC/admin/linux/build-appimage.sh" ]; then
+# 4. Linux AppImage: before 35.0.3 the packaging script hard-codes the icon name; since, it reads it from the
+#    .desktop file (admin/linux/resolve-appimage-icon.sh), which already names ours
+if [ -f "$SRC/admin/linux/build-appimage.sh" ] && ! grep -q 'resolve-appimage-icon.sh' "$SRC/admin/linux/build-appimage.sh"; then
     replace "$SRC/admin/linux/build-appimage.sh" 'apps/Nextcloud.png' 'apps/Orneos.png'
 fi
 
