@@ -88,10 +88,24 @@ jobs:
       - run: git clone -q --depth 1 --branch ${{ needs.upstream.outputs.desktop }} https://github.com/nextcloud/desktop.git upstream
       - run: ORNEOS_BUILDNR=${{ needs.upstream.outputs.buildnr }} scripts/apply-desktop.sh upstream
       - run: scripts/build-desktop-linux.sh upstream ${{ needs.upstream.outputs.buildnr }}
-      - uses: actions/upload-artifact@v4
+      # The files also go to the draft release: artifacts only carry them there (kept 5 days, not forever)
+      - id: upload
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: linux
           path: upstream/orneos-*.AppImage
+          retention-days: 5
+      # GitHub's artifact service sometimes times out (09/11: a 90-minute Intel build lost): one more try
+      - if: steps.upload.outcome == 'failure'
+        run: sleep 60
+      - if: steps.upload.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: upstream/orneos-*.AppImage
+          retention-days: 5
+          overwrite: true
 
   # KDE Craft, as in upstream's windows-build-and-test.yml; NSIS installer (Packager/PackageType in craftmaster.ini)
   windows:
@@ -166,10 +180,24 @@ jobs:
             if (!($listing | Select-String -SimpleMatch $f -Quiet)) { Write-Error "installer is missing $f"; exit 1 }
           }
           Get-ChildItem dist
-      - uses: actions/upload-artifact@v4
+      # The files also go to the draft release: artifacts only carry them there (kept 5 days, not forever)
+      - id: upload
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: windows
           path: dist/*.exe
+          retention-days: 5
+      # GitHub's artifact service sometimes times out (09/11: a 90-minute Intel build lost): one more try
+      - if: steps.upload.outcome == 'failure'
+        run: sleep 60
+      - if: steps.upload.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*.exe
+          retention-days: 5
+          overwrite: true
 
   # admin/osx/mac-crafter: Craft + app bundle, then a DMG. No Apple signature (ad hoc only). Sparkle updates,
   # verified with our EdDSA key (desktop/sparkle-ed25519.pub; the server signs each published DMG).
@@ -212,10 +240,24 @@ jobs:
           cp -R "$APP" "$RUNNER_TEMP/dmg/" && ln -s /Applications "$RUNNER_TEMP/dmg/Applications"
           hdiutil create -volname Orneos -srcfolder "$RUNNER_TEMP/dmg" -ov -format UDZO "dist/Orneos-$VERSION-macos-${{ matrix.arch }}.dmg"
           ls -la dist
-      - uses: actions/upload-artifact@v4
+      # The files also go to the draft release: artifacts only carry them there (kept 5 days, not forever)
+      - id: upload
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: macos-${{ matrix.arch }}
           path: dist/*
+          retention-days: 5
+      # GitHub's artifact service sometimes times out (09/11: a 90-minute Intel build lost): one more try
+      - if: steps.upload.outcome == 'failure'
+        run: sleep 60
+      - if: steps.upload.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: dist/*
+          retention-days: 5
+          overwrite: true
 
   # Orneos Meet for desktop (nextcloud/talk-desktop, Electron): official branding hook, unsigned like the sync client
   meet-desktop:
@@ -261,10 +303,24 @@ jobs:
             cp "$f" "dist/Orneos-Meet-$V-${{ matrix.label }}.${f##*.}"
           done
           ls -la dist; [ -n "$(ls dist)" ]
-      - uses: actions/upload-artifact@v4
+      # The files also go to the draft release: artifacts only carry them there (kept 5 days, not forever)
+      - id: upload
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: meet-${{ matrix.label }}
           path: dist/*
+          retention-days: 5
+      # GitHub's artifact service sometimes times out (09/11: a 90-minute Intel build lost): one more try
+      - if: steps.upload.outcome == 'failure'
+        run: sleep 60
+      - if: steps.upload.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: meet-${{ matrix.label }}
+          path: dist/*
+          retention-days: 5
+          overwrite: true
 
   release:
     needs: [upstream, linux, windows, macos, meet-desktop]
