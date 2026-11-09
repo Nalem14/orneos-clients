@@ -32,10 +32,20 @@ jobs:
       - uses: actions/checkout@v4
       - name: New official release?
         id: bump
+        env: { GH_TOKEN: '${{ github.token }}' }
         run: |
           scripts/check-upstream.sh --write
+          . ./versions.env
           if git diff --quiet versions.env; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            # A failed build is retried every day until the current official version has its desktop release
+            # (04/11: v35.0.3 failed once, then nothing was built for 5 days)
+            if gh release list --repo "${{ github.repository }}" --limit 20 --json name --jq '.[].name' \
+                | grep -qF "Orneos desktop $DESKTOP_TAG "; then
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "no desktop release for $DESKTOP_TAG yet: building again"
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+            fi
           else
             git config user.name "orneos-bot" && git config user.email "contact@orneos.eu"
             . ./versions.env && git commit -qam "Upstream: desktop $DESKTOP_TAG, android $ANDROID_TAG" && git push
