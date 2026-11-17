@@ -140,7 +140,9 @@ jobs:
             ${{ env.CRAFT_MASTER_LOCATION }}
             ${{ github.workspace }}\craft-clone
             ${{ github.workspace }}\${{ env.CRAFT_TARGET }}
-          key: craft-${{ env.CRAFT_TARGET }}-${{ needs.upstream.outputs.desktop }}
+          # Bump the leading version when nextcloud/craft rewrites its history: the cached craft-core checkout
+          # cannot merge it (16/11: conflict in blueprints/libs/zlib/zlib.py) and a fresh cache is the only way out
+          key: craft2-${{ env.CRAFT_TARGET }}-${{ needs.upstream.outputs.desktop }}
       - name: Craft and dependencies
         shell: pwsh
         run: |
