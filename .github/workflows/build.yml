@@ -124,6 +124,10 @@ jobs:
         shell: bash
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
+      # Craft merges its cached craft-core checkout with upstream (git merge): without an identity it stops
+      # with "Committer identity unknown" as soon as nextcloud/craft master moves (16/11: force-pushed)
+      - run: git config --global user.name "orneos-bot" && git config --global user.email "contact@orneos.eu"
+        shell: bash
       - name: Craft refs
         id: refs
         shell: bash

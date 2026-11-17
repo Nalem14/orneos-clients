@@ -28,4 +28,12 @@ if ! grep -qF "$NEW" "$SRC/forge.config.js"; then
     OLD="$OLD" NEW="$NEW" perl -pi -e 's/\Q$ENV{OLD}\E/$ENV{NEW}/g' "$SRC/forge.config.js"
 fi
 
+# 4. Universal macOS build: the Fuses plugin (talk-desktop >= 2.3.4) re-signs the arm64 slice only, which adds
+#    _CodeSignature files x64 lacks, and @electron/universal refuses to stitch them. The CI signs the merged app
+#    ad hoc afterwards, so the per-slice signature is turned off (the only patch of upstream code, no setting for it).
+if ! grep -q 'resetAdHocDarwinSignature: false' "$SRC/forge.config.js"; then
+    grep -q 'new FusesPlugin({' "$SRC/forge.config.js" || { echo "upstream changed: FusesPlugin not found" >&2; exit 1; }
+    perl -pi -e 's/new FusesPlugin\(\{/new FusesPlugin({ resetAdHocDarwinSignature: false,/' "$SRC/forge.config.js"
+fi
+
 echo "talk-desktop overlay applied on $(git -C "$SRC" describe --tags 2>/dev/null || echo "$SRC")"
