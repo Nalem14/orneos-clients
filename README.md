@@ -1,14 +1,15 @@
 # Clients Orneos
 
-Applications Orneos de bureau (Windows, macOS, Linux) et Android (Orneos pour les fichiers, Orneos Meet pour Talk). Ce sont les clients officiels de Nextcloud, **sans fork** : ce dossier ne contient que notre **surcouche** (marque, réglages, icônes) et les scripts qui l'appliquent sur une version officielle précise.
+Applications Orneos de bureau (Windows, macOS, Linux) et Android (Orneos pour les fichiers, Orneos Meet pour Talk, Mots de passe Orneos pour l'app Passwords). Ce sont les clients officiels de Nextcloud (et, pour les mots de passe, le client libre de hegocre), **sans fork** : ce dossier ne contient que notre **surcouche** (marque, réglages, icônes) et les scripts qui l'appliquent sur une version officielle précise.
 
 ```
-versions.env            tags officiels suivis (DESKTOP_TAG, ANDROID_TAG)
+versions.env            tags officiels suivis (DESKTOP_TAG, ANDROID_TAG, TALK_TAG, PASSWORDS_TAG…)
 brand/                  logo source (mark-1024.svg) ; scripts/make-icons.sh en tire les PNG
 desktop/branding.cmake  nom, serveur imposé, flux de mise à jour, GUID Windows
 desktop/theme/          icônes et logos qui remplacent ceux de Nextcloud
 android/res/            setup.xml (réglages), logos vectoriels, icônes du lanceur
 talk/res/               Orneos Meet (nextcloud/talk-android) : setup.xml (serveur, compte partagé, Firebase), icônes
+passwords/res/          Mots de passe Orneos (hegocre/NextcloudPasswords) : icônes (remplacées par nom)
 scripts/                apply-*.sh, build-*.sh, check-upstream.sh, make-icons.sh
 .github/workflows/      build quotidien (actif quand ce dossier sera son propre dépôt GitHub)
 ```
@@ -32,6 +33,12 @@ Aucun choix de serveur :
 
 Dans les deux cas, c'est le Login Flow v2 : le navigateur s'ouvre sur la connexion Orneos (login.orneos.eu, double authentification, plusieurs comptes), puis l'app reçoit un mot de passe d'application révocable.
 
+## Mots de passe Orneos (Passwords Android)
+
+Client Android de l'app Passwords du cloud : [hegocre/NextcloudPasswords](https://github.com/hegocre/NextcloudPasswords) (GPL-3.0, tag `PASSWORDS_TAG`), choisi pour son remplissage automatique Android, ses codes 2FA et son déverrouillage par empreinte. `tools/client-build.sh passwords [--publish]` ; paquet `eu.orneos.passwords`, même clé de signature, APK `orneos-passwords-<versionCode>.apk`, publié comme Meet (`downloads/android/passwords-latest`, F-Droid, avis dans la cloche aux comptes qui ont une session « Orneos Passwords (Android) »).
+
+Cette app n'a aucun réglage de marque (ni saveur ni `setup.xml`) : `scripts/apply-passwords.sh` remplace les icônes par nom dans `app/src/main/res`, les noms (« Mots de passe Orneos », « Orneos Passwords », « Orneos Passwörter », plus aucun « Nextcloud » dans les textes), le paquet, et un APK universel au lieu d'un par architecture. Trois retouches de code, faute de réglage : la connexion s'ouvre d'office sur `app.orneos.eu` (Login Flow v1, la carte d'adresse reste préremplie si on revient), les couleurs du cloud (Klein) par défaut, et un nom de client fixe (`Orneos Passwords (Android)`, user agent de la connexion, qui nomme le mot de passe d'application dans le cloud). versionCode = officiel × 100 + `PASSWORDS_REVISION`.
+
 ## Orneos Meet (Talk Android)
 
 Même principe que l'app Fichiers (`scripts/apply-talk.sh`, saveur `generic`, paquet `eu.orneos.talk`, signé sur le serveur avec la même clé). Il reprend le compte de l'app Orneos (`nc_import_accounts_from` = `eu.orneos.files`, type `eu.orneos`).
@@ -49,7 +56,7 @@ Même principe que l'app Fichiers (`scripts/apply-talk.sh`, saveur `generic`, pa
 | Windows | l'updater intégré télécharge l'installeur (`.exe` NSIS) et l'installe en silence (`/S`) | `/updates/desktop` (`ClientUpdateController`) lit `private/clients/desktop.json` |
 | macOS | Sparkle (dans /Applications) : télécharge le DMG et remplace l'app ; signature Ed25519 vérifiée avec `desktop/sparkle-ed25519.pub` (clé privée sur le serveur, `private/clients/sparkle-ed25519.key`, signature automatique à la publication) | même flux, en appcast |
 | Linux | notification, lien vers la page Appareils | même flux |
-| Android | l'app Fichiers lit `downloads/android/latest` et propose `orneos-<versionCode>.apk` ; les deux apps sont aussi dans **notre dépôt F-Droid** (`https://orneos.eu/downloads/fdroid/repo`, `tools/client-fdroid.sh`), qui les met à jour automatiquement | fichiers statiques |
+| Android | l'app Fichiers lit `downloads/android/latest` et propose `orneos-<versionCode>.apk` ; les trois apps sont aussi dans **notre dépôt F-Droid** (`https://orneos.eu/downloads/fdroid/repo`, `tools/client-fdroid.sh`), qui les met à jour automatiquement | fichiers statiques |
 
 Numéro de version bureau : `35.0.0.<AAJJJHH>` (année, jour, heure UTC du build), le même sur le serveur et en CI ; c'est lui que l'updater compare.
 
@@ -66,7 +73,7 @@ La page Appareils devra expliquer ces étapes quand les apps y seront proposées
 
 ## Identifiants à ne jamais changer une fois publiés
 
-- Android : `applicationId` `eu.orneos.files`, `account_type` `eu.orneos`, les `authority` de `setup.xml`, la clé de signature `private/clients/android-release.jks` du serveur orneos.eu (sans elle, aucune mise à jour possible : elle doit figurer dans les sauvegardes).
+- Android : `applicationId` `eu.orneos.files`, `eu.orneos.talk`, `eu.orneos.passwords`, `account_type` `eu.orneos`, les `authority` de `setup.xml`, la clé de signature `private/clients/android-release.jks` du serveur orneos.eu (sans elle, aucune mise à jour possible : elle doit figurer dans les sauvegardes).
 - Windows : `WIN_MSI_UPGRADE_CODE` et les GUID de `branding.cmake` / `apply-desktop.sh`.
 - macOS : la clé Sparkle (`desktop/sparkle-ed25519.pub` et sa moitié privée sur le serveur) ; la changer rendrait les apps installées sourdes aux mises à jour.
 

@@ -23,4 +23,9 @@ done
 for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
     mkdir -p "talk/res/mipmap-${d%%:*}"; png brand/meet-1024.svg "${d##*:}" "talk/res/mipmap-${d%%:*}/ic_launcher.png"
 done
+# Orneos Passwords (passwords/): launcher fallbacks and the round logo of its sign-in and About screens
+for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+    mkdir -p "passwords/res/mipmap-${d%%:*}"; png brand/passwords-1024.svg "${d##*:}" "passwords/res/mipmap-${d%%:*}/ic_launcher.png"
+done
+png brand/passwords-1024.svg 512 passwords/res/drawable/app_icon.png
 echo "icons ok"

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Orneos Passwords icon (padlock, safran keyhole, clients/brand/passwords-1024.svg). Also the monochrome icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="36" android:viewportHeight="36">
+  <group android:translateX="6" android:translateY="6">
+    <path android:pathData="M8,10V7a4,4 0,0 1,8 0v3" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:fillColor="#00000000"/>
+    <path android:pathData="M6,10h12a2,2 0,0 1,2 2v7a2,2 0,0 1,-2 2h-12a2,2 0,0 1,-2 -2v-7a2,2 0,0 1,2 -2z" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineJoin="round" android:fillColor="#00000000"/>
+    <path android:pathData="M12,14v3" android:strokeColor="#F0A202" android:strokeWidth="1.8" android:strokeLineCap="round" android:fillColor="#00000000"/>
+  </group>
+</vector>

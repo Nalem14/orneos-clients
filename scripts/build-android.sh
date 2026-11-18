@@ -1,5 +1,6 @@
 #!/bin/bash
-# Builds an Orneos Android app (generic flavor): Orneos Files (nextcloud/android) or Orneos Meet (nextcloud/talk-android),
+# Builds an Orneos Android app: Orneos Files (nextcloud/android) or Orneos Meet (nextcloud/talk-android), "generic" flavor,
+# or Orneos Passwords (hegocre/NextcloudPasswords, no flavor: ORNEOS_FLAVOR=""),
 # in a JDK 21 container; the Android SDK, NDK and Gradle caches live in $CACHE so later builds are fast.
 # Usage: scripts/build-android.sh <checkout-with-overlay> [debug|release]
 # release: needs ORNEOS_KEYSTORE (path), ORNEOS_KEYSTORE_PASS and ORNEOS_KEY_ALIAS;
@@ -17,7 +18,8 @@ NAME="${ORNEOS_APK_NAME:-orneos}"
 NDK_VERSION=""; CMAKE_VERSION=""
 [ -f "$SRC/ndk.env" ] && . "$SRC/ndk.env" # only the Files app has native code
 NATIVE=$( [ -n "$NDK_VERSION" ] && echo "'ndk;$NDK_VERSION' 'cmake;$CMAKE_VERSION'" || true)
-TASK=$([ "$MODE" = release ] && echo assembleGenericRelease || echo assembleGenericDebug)
+FLAVOR="${ORNEOS_FLAVOR-generic}"
+TASK="assemble${FLAVOR^}$([ "$MODE" = release ] && echo Release || echo Debug)"
 
 # Gradle may drop transform dirs while chown walks the cache; with bash -e that
 # would discard a successful build status. Keep the gradle exit code either way.
@@ -35,7 +37,7 @@ docker run --rm -v "$SRC":/src -v "$CACHE/sdk":/sdk -v "$CACHE/gradle":/root/.gr
     chown -R $(id -u):$(id -g) /src /sdk /root/.gradle 2>/dev/null || true
     exit \$status"
 
-OUT="$SRC/app/build/outputs/apk/generic/$MODE"
+OUT="$SRC/app/build/outputs/apk/${FLAVOR:+$FLAVOR/}$MODE"
 if [ "$MODE" = release ]; then
     APK=$(ls "$OUT"/*-unsigned.apk | head -1)
     CODE=$(docker run --rm -v "$CACHE/sdk":/sdk -v "$OUT":/out eclipse-temurin:21-jdk bash -c \
